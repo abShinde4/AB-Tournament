@@ -18,7 +18,10 @@ const userRoutes = require("./routes/userRoutes");
 const app = express();
 
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+  origin: "https://ab-tournament.vercel.app",
+  credentials: true
+}));
 app.use(express.json());
 app.use(morgan("dev"));
 
