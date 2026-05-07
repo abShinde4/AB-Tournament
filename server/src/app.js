@@ -19,7 +19,9 @@ const app = express();
 
 app.use(helmet());
 app.use(cors({
-  origin: ["https://ab-tournament.vercel.app",
+  origin: [
+    "http://localhost:5173",
+    "https://ab-tournament.vercel.app",
     "https://ab-tournament-git-main-abshinde4s-projects.vercel.app"
   ],
   
