@@ -23,9 +23,18 @@ const initializeEmailService = () => {
     if (emailProvider === "gmail") {
       transporter = nodemailer.createTransport({
         service: "gmail",
+
         auth: {
           user: emailUser,
           pass: emailPassword,
+        },
+
+        connectionTimeout: 60000,
+        greetingTimeout: 30000,
+        socketTimeout: 60000,
+
+        tls: {
+          rejectUnauthorized: false,
         },
       });
     } else if (emailProvider === "smtp" && smtpHost) {
