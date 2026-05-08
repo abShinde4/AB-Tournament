@@ -1,83 +1,25 @@
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 
 // Email service for sending verification emails and notifications
 let transporter = null;
+const senderEmail = "onboarding@resend.dev";
 
 const initializeEmailService = () => {
-  const emailProvider = process.env.EMAIL_PROVIDER || "gmail";
-  const emailUser = process.env.EMAIL_USER;
-  const emailPassword = process.env.EMAIL_PASS;
-  const smtpHost = process.env.SMTP_HOST;
-  const smtpPort = process.env.SMTP_PORT || 587;
+  const resendApiKey = process.env.RESEND_API_KEY;
 
-  if (!emailUser || !emailPassword) {
+  if (!resendApiKey) {
     console.warn(
-      "⚠️  Email disabled - missing EMAIL_USER or EMAIL_PASS. " +
-        "Set EMAIL_USER and use a Gmail App Password (16 chars) in EMAIL_PASS."
+      "⚠️  Email disabled - missing RESEND_API_KEY. Set RESEND_API_KEY to use the Resend email service."
     );
     transporter = null;
     return;
   }
 
   try {
-    if (emailProvider === "gmail") {
-      transporter = nodemailer.createTransport({
-        service: "gmail",
-
-        auth: {
-          user: emailUser,
-          pass: emailPassword,
-        },
-
-        connectionTimeout: 60000,
-        greetingTimeout: 30000,
-        socketTimeout: 60000,
-
-        tls: {
-          rejectUnauthorized: false,
-        },
-      });
-    } else if (emailProvider === "smtp" && smtpHost) {
-      transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        secure: Number(smtpPort) === 465,
-        auth: {
-          user: emailUser,
-          pass: emailPassword,
-        },
-      });
-    } else {
-      console.warn("⚠️  Email service not configured. Verification emails will not be sent.");
-      transporter = null;
-      return;
-    }
-
-    transporter.verify((verifyError) => {
-      if (verifyError) {
-        if (
-          verifyError.responseCode === 535 ||
-          /Username and Password not accepted|5\.7\.8/.test(verifyError.message)
-        ) {
-          console.warn(
-            "⚠️  Gmail authentication failed. Use a Gmail App Password (16 chars) in EMAIL_PASS, not your regular Gmail password."
-          );
-        } else {
-          console.warn("⚠️  Email transporter verification failed:", verifyError.message);
-        }
-        transporter = null;
-      } else {
-        console.log("✓ Email service configured");
-      }
-    });
+    transporter = new Resend(resendApiKey);
+    console.log("✓ Email service configured");
   } catch (error) {
-    if (error.responseCode === 535 || /Username and Password not accepted|5\.7\.8/.test(error.message)) {
-      console.error(
-        "✗ Gmail authentication failed. Use a Gmail App Password (16 chars) in EMAIL_PASS, not your regular Gmail password."
-      );
-    } else {
-      console.error("✗ Email initialization failed:", error);
-    }
+    console.error("✗ Email initialization failed:", error);
     transporter = null;
   }
 };
@@ -91,7 +33,7 @@ const sendVerificationEmail = async (email, verificationToken) => {
   const verificationUrl = `${process.env.CLIENT_URL || "http://localhost:5173"}/verify-email?token=${verificationToken}`;
 
   const mailOptions = {
-    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+    from: senderEmail,
     to: email,
     subject: "AB Tournament - Email Verification",
     html: `
@@ -113,9 +55,9 @@ const sendVerificationEmail = async (email, verificationToken) => {
   };
 
   try {
-    const result = await transporter.sendMail(mailOptions);
+    const result = await transporter.emails.send(mailOptions);
     console.log(`✓ Verification email sent to ${email}`);
-    return { sent: true, messageId: result.messageId };
+    return { sent: true, messageId: result.id };
   } catch (error) {
     console.error(`✗ Failed to send verification email to ${email}:`, error.message);
     return { sent: false, reason: error.message };
@@ -131,7 +73,7 @@ const sendPasswordResetEmail = async (email, resetToken) => {
   const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/reset-password?token=${resetToken}`;
 
   const mailOptions = {
-    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+    from: senderEmail,
     to: email,
     subject: "AB Tournament - Password Reset",
     html: `
@@ -150,9 +92,9 @@ const sendPasswordResetEmail = async (email, resetToken) => {
   };
 
   try {
-    const result = await transporter.sendMail(mailOptions);
+    const result = await transporter.emails.send(mailOptions);
     console.log(`✓ Password reset email sent to ${email}`);
-    return { sent: true, messageId: result.messageId };
+    return { sent: true, messageId: result.id };
   } catch (error) {
     console.error(`✗ Failed to send password reset email to ${email}:`, error.message);
     return { sent: false, reason: error.message };
@@ -166,7 +108,7 @@ const sendOtpEmail = async (email, otp) => {
   }
 
   const mailOptions = {
-    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+    from: senderEmail,
     to: email,
     subject: "AB Tournament - Your OTP Login Code",
     html: `
@@ -190,9 +132,9 @@ const sendOtpEmail = async (email, otp) => {
   };
 
   try {
-    const result = await transporter.sendMail(mailOptions);
+    const result = await transporter.emails.send(mailOptions);
     console.log(`✓ OTP email sent to ${email}`);
-    return { sent: true, messageId: result.messageId };
+    return { sent: true, messageId: result.id };
   } catch (error) {
     console.error(`✗ Failed to send OTP email to ${email}:`, error.message);
     return { sent: false, reason: error.message };
