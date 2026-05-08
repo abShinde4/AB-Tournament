@@ -25,8 +25,20 @@ const FlashScreen = ({ user }) => {
           </>
         ) : (
           <>
-            <div className="flash-logo">AB Tournament</div>
-            <h2>Loading your battleground...</h2>
+            <div className="flash-logo">
+               <img
+                 src="/favicon.png"
+                 alt="AB Tournament"
+                  style={{
+                    width: "120px",
+                    height: "120px",
+                    borderRadius: "20px",
+                    boxShadow: "0 0 30px rgba(0,255,180,0.5)"
+                  }}
+                />
+             </div>
+
+              <h2>Loading your battleground...</h2>
           </>
         )}
 

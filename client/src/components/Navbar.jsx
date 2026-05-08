@@ -11,7 +11,7 @@ const Navbar = () => {
         <img
             src="/favicon.png"
              alt="AB Tournament"
-              style={{ width: "40px", height: "40px", borderRadius: "10px" }}
+              style={{ width: "75px", height: "60px", borderRadius: "10px" }}
         /> 
       <span>AB Tournament</span>
       </Link>
