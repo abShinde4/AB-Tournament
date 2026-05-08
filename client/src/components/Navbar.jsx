@@ -7,8 +7,13 @@ const Navbar = () => {
 
   return (
     <header className="navbar">
-      <Link to="/" className="brand">
-        AB Tournament
+      <Link to="/" className="brand flex items-center gap-2">
+        <img
+            src="/favicon.png"
+             alt="AB Tournament"
+              style={{ width: "40px", height: "40px", borderRadius: "10px" }}
+        /> 
+      <span>AB Tournament</span>
       </Link>
       <nav>
         <NavLink to="/">Home</NavLink>
