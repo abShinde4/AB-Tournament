@@ -18,11 +18,12 @@ const normalizeMatchStatus = (match) => {
 };
 
 const serializeMatch = (match, joinedMatchIds = new Set()) => {
-  const item = match.toObject();
+  const item = typeof match.toObject === "function" ? match.toObject() : match;
   const now = Date.now();
   const unlockTime = item.roomUnlockTime ? new Date(item.roomUnlockTime).getTime() : null;
   const isRoomVisible = item.isRoomPublished && unlockTime && now >= unlockTime;
 
+  const joinedPlayersCount = typeof item.joinedPlayersCount === "number" ? item.joinedPlayersCount : 0;
   const safe = {
     ...item,
     status: normalizeMatchStatus(match),
@@ -32,11 +33,11 @@ const serializeMatch = (match, joinedMatchIds = new Set()) => {
     isRoomPublished: item.isRoomPublished,
     roomUnlockTime: item.roomUnlockTime,
     isRoomVisible,
-    joinedPlayersCount: item.joinedPlayersCount || 0,
-    remainingSlots: (item.maxPlayers || 100) - (item.joinedPlayersCount || 0),
+    joinedPlayersCount,
+    remainingSlots: (item.maxPlayers || 100) - joinedPlayersCount,
   };
 
-  const userJoined = joinedMatchIds.has(String(match._id));
+  const userJoined = joinedMatchIds.has(String(item._id));
   if (safe.isRoomVisible && userJoined) {
     safe.roomId = item.roomId || "";
     safe.roomPassword = item.roomPassword || "";
@@ -96,8 +97,36 @@ const listMatches = async (req, res) => {
     joinedMatchIds = new Set(registrations.map((entry) => String(entry.match)));
   }
 
+  const matchIds = matches.map((match) => match._id);
+  const registrationCounts = await Registration.aggregate([
+    { $match: { match: { $in: matchIds } } },
+    { $group: { _id: "$match", count: { $sum: 1 } } },
+  ]);
+  const countMap = new Map(registrationCounts.map((item) => [String(item._id), item.count]));
+
+  const patchedMatches = matches.map((match) => {
+    const item = match.toObject();
+    const actualCount = countMap.get(String(match._id)) || 0;
+    if (typeof item.joinedPlayersCount !== "number" || item.joinedPlayersCount !== actualCount) {
+      item.joinedPlayersCount = actualCount;
+    }
+    return item;
+  });
+
+  const bulkOps = patchedMatches
+    .filter((item) => typeof item.joinedPlayersCount === "number" && item.joinedPlayersCount !== matches.find((m) => String(m._id) === String(item._id)).joinedPlayersCount)
+    .map((item) => ({
+      updateOne: {
+        filter: { _id: item._id },
+        update: { joinedPlayersCount: item.joinedPlayersCount },
+      },
+    }));
+  if (bulkOps.length) {
+    await Match.bulkWrite(bulkOps);
+  }
+
   return res.json({
-    data: matches.map((match) => serializeMatch(match, joinedMatchIds)),
+    data: patchedMatches.map((match) => serializeMatch(match, joinedMatchIds)),
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     serverTime: new Date().toISOString(),
   });
@@ -118,6 +147,7 @@ const createMatch = async (req, res) => {
     startTime: startDate,
     status: status ?? "Upcoming",
     maxPlayers: maxPlayers ?? 100,
+    joinedPlayersCount: 0,
     roomId: roomId ?? "",
     roomPassword: roomPassword ?? "",
     isRoomVisible: shouldBeVisible,
@@ -170,135 +200,138 @@ const joinMatch = async (req, res) => {
   const session = await mongoose.startSession();
 
   try {
-    return await session.withTransaction(async () => {
-      // Fetch match with session
-      const match = await Match.findById(matchId).session(session);
-      if (!match) {
-        return res.status(404).json({ message: "Match not found." });
-      }
+    session.startTransaction();
 
-      // Check match status
-      const effectiveStatus = normalizeMatchStatus(match);
-      if (effectiveStatus !== "Upcoming") {
-        return res.status(400).json({ message: "You can join only upcoming matches." });
-      }
+    const match = await Match.findById(matchId).session(session);
+    if (!match) {
+      await session.abortTransaction();
+      return res.status(404).json({ message: "Match not found." });
+    }
 
-      // Check if already joined (within transaction)
-      const existing = await Registration.findOne({ user: req.user._id, match: matchId }).session(session);
-      if (existing) {
+    const effectiveStatus = normalizeMatchStatus(match);
+    if (effectiveStatus !== "Upcoming") {
+      await session.abortTransaction();
+      return res.status(400).json({ message: "You can join only upcoming matches." });
+    }
+
+    const existing = await Registration.findOne({ user: req.user._id, match: matchId }).session(session);
+    if (existing) {
+      await session.abortTransaction();
+      return res.status(409).json({ message: "Already joined this match." });
+    }
+
+    const currentCount = await Registration.countDocuments({ match: matchId }).session(session);
+    const maxPlayers = match.maxPlayers ?? 100;
+    if (currentCount >= maxPlayers) {
+      await session.abortTransaction();
+      return res.status(400).json({ message: "Match is full." });
+    }
+
+    const user = await User.findById(req.user._id).session(session);
+    if (!user) {
+      await session.abortTransaction();
+      return res.status(401).json({ message: "User not found." });
+    }
+
+    if (user.walletBalance < match.entryFee) {
+      await session.abortTransaction();
+      return res.status(400).json({ message: "Insufficient wallet balance." });
+    }
+
+    const isBgmi = match.game === "BGMI";
+    const isFreeFire = match.game === "Free Fire";
+    if (isBgmi && (!user.bgmiName || !user.bgmiUid)) {
+      await session.abortTransaction();
+      return res.status(400).json({
+        message: "Please complete your BGMI gaming profile before joining. Add BGMI Name and UID in your profile.",
+        requiresGamingProfile: true,
+      });
+    }
+    if (isFreeFire && (!user.freeFireName || !user.freeFireUid)) {
+      await session.abortTransaction();
+      return res.status(400).json({
+        message: "Please complete your Free Fire gaming profile before joining. Add Free Fire Name and UID in your profile.",
+        requiresGamingProfile: true,
+      });
+    }
+
+    try {
+      await Registration.create([{ user: req.user._id, match: matchId }], { session });
+    } catch (error) {
+      await session.abortTransaction();
+      if (error.code === 11000) {
         return res.status(409).json({ message: "Already joined this match." });
       }
+      throw error;
+    }
 
-      // Check if match is full
-      const currentCount = await Registration.countDocuments({ match: matchId }).session(session);
-      if (currentCount >= match.maxPlayers) {
-        return res.status(400).json({ message: "Match is full." });
-      }
+    const totalRegistrations = await Registration.countDocuments({ match: matchId }).session(session);
+    match.joinedPlayersCount = totalRegistrations;
+    await match.save({ session });
 
-      // Fetch user with session and lock for update
-      const user = await User.findById(req.user._id).session(session);
-      if (!user) {
-        return res.status(401).json({ message: "User not found." });
-      }
-
-      // Check wallet balance
-      if (user.walletBalance < match.entryFee) {
-        return res.status(400).json({ message: "Insufficient wallet balance." });
-      }
-
-      // Validate gaming profile
-      const isBgmi = match.game === "BGMI";
-      const isFreeFire = match.game === "Free Fire";
-      if (isBgmi && (!user.bgmiName || !user.bgmiUid)) {
-        return res.status(400).json({
-          message: "Please complete your BGMI gaming profile before joining. Add BGMI Name and UID in your profile.",
-          requiresGamingProfile: true,
-        });
-      }
-      if (isFreeFire && (!user.freeFireName || !user.freeFireUid)) {
-        return res.status(400).json({
-          message: "Please complete your Free Fire gaming profile before joining. Add Free Fire Name and UID in your profile.",
-          requiresGamingProfile: true,
-        });
-      }
-
-      // Create registration (unique index prevents duplicates even with race conditions)
-      let registration;
-      try {
-        registration = await Registration.create([{ user: req.user._id, match: matchId }], { session });
-      } catch (error) {
-        if (error.code === 11000) {
-          return res.status(409).json({ message: "Already joined this match." });
-        }
-        throw error;
-      }
-
-      // Increment joined players count
-      await Match.findByIdAndUpdate(
-        matchId,
-        { $inc: { joinedPlayersCount: 1 } },
-        { session }
-      );
-
-      // Deduct entry fee and add XP (atomic operations)
-      const xpEarned = 10;
-      const updatedUser = await User.findByIdAndUpdate(
-        req.user._id,
-        {
-          $inc: {
-            walletBalance: -match.entryFee,
-            xp: xpEarned,
-          },
+    const xpEarned = 10;
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        $inc: {
+          walletBalance: -match.entryFee,
+          xp: xpEarned,
         },
-        { session, new: true }
-      ).select("-password");
+      },
+      { session, new: true }
+    ).select("-password");
 
-      // Calculate new level
-      if (updatedUser && updatedUser.xp) {
-        const newLevel = Math.floor(updatedUser.xp / 100) + 1;
-        if (newLevel !== updatedUser.level) {
-          await User.findByIdAndUpdate(
-            req.user._id,
-            { level: newLevel },
-            { session }
-          );
-          updatedUser.level = newLevel;
-        }
+    if (updatedUser && updatedUser.xp) {
+      const newLevel = Math.floor(updatedUser.xp / 100) + 1;
+      if (newLevel !== updatedUser.level) {
+        await User.findByIdAndUpdate(
+          req.user._id,
+          { level: newLevel },
+          { session }
+        );
+        updatedUser.level = newLevel;
       }
+    }
 
-      // Create transaction record
-      await Transaction.create(
-        [{
+    await Transaction.create(
+      [
+        {
           user: req.user._id,
           type: "debit",
           amount: match.entryFee,
           source: "match_entry",
           description: `Entry paid for ${match.title}`,
           status: "success",
-        }],
-        { session }
-      );
+        },
+      ],
+      { session }
+    );
 
-      // Create notification
-      await Notification.create(
-        [{
+    await Notification.create(
+      [
+        {
           user: req.user._id,
           type: "match_joined",
           title: "Tournament Joined",
           message: `You joined ${match.title} successfully.`,
           metadata: { matchId: match._id, startTime: match.startTime },
-        }],
-        { session }
-      );
+        },
+      ],
+      { session }
+    );
 
-      return res.status(201).json({
-        message: "Joined successfully.",
-        walletBalance: updatedUser.walletBalance,
-        xp: updatedUser.xp,
-        level: updatedUser.level,
-      });
+    await session.commitTransaction();
+
+    return res.status(201).json({
+      message: "Joined successfully.",
+      walletBalance: updatedUser.walletBalance,
+      xp: updatedUser.xp,
+      level: updatedUser.level,
+      joinedPlayersCount: match.joinedPlayersCount,
+      remainingSlots: maxPlayers - match.joinedPlayersCount,
     });
   } catch (error) {
+    await session.abortTransaction();
     console.error("Error joining match:", error);
     return res.status(500).json({ message: error.message || "Failed to join match." });
   } finally {
