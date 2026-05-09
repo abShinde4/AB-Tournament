@@ -751,6 +751,16 @@ td {
   top: 2.5rem;
   width: min(360px, 88vw);
   z-index: 40;
+  padding: 1rem;
+}
+
+.notif-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 0.2rem;
 }
 
 .notif-item {
@@ -761,18 +771,37 @@ td {
   border: 1px solid #2e355b;
   border-radius: 10px;
   text-align: left;
-  padding: 0.6rem;
+  padding: 0.75rem;
   cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
 }
 
 .notif-item.read {
-  opacity: 0.7;
+  opacity: 0.72;
+  background: #10172e;
+}
+
+.notif-item:hover {
+  transform: translateY(-1px);
+  background: #17204a;
 }
 
 .notif-item span {
   display: block;
   margin-top: 0.2rem;
   color: #b9bee4;
+}
+
+.notif-item-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.notif-time {
+  color: #9098c7;
+  font-size: 0.8rem;
 }
 
 .modal-overlay {

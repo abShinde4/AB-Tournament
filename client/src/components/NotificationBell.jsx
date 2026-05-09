@@ -3,6 +3,14 @@ import { api } from "../api";
 import { useAuth } from "../context/useAuth";
 import toast from "react-hot-toast";
 
+const formatTimeAgo = (timestamp) => {
+  const diff = Date.now() - new Date(timestamp).getTime();
+  if (diff < 60 * 1000) return "Just now";
+  if (diff < 60 * 60 * 1000) return `${Math.floor(diff / (60 * 1000))}m ago`;
+  if (diff < 24 * 60 * 60 * 1000) return `${Math.floor(diff / (60 * 60 * 1000))}h ago`;
+  return `${Math.floor(diff / (24 * 60 * 60 * 1000))}d ago`;
+};
+
 const NotificationBell = () => {
   const { isAuthenticated } = useAuth();
   const [open, setOpen] = useState(false);
@@ -14,7 +22,7 @@ const NotificationBell = () => {
     if (!isAuthenticated) return undefined;
     const fetchNotifications = async () => {
       try {
-        const res = await api.getNotifications("limit=7");
+        const res = await api.getNotifications("limit=20");
         setItems(res.data || []);
       } catch {
         // silent in navbar
@@ -45,17 +53,22 @@ const NotificationBell = () => {
         <div className="notif-panel card">
           <h4>Notifications</h4>
           {items.length === 0 && <p className="muted">No notifications yet.</p>}
-          {items.map((item) => (
-            <button
-              key={item._id}
-              type="button"
-              className={`notif-item ${item.isRead ? "read" : ""}`}
-              onClick={() => markRead(item._id)}
-            >
-              <strong>{item.title}</strong>
-              <span>{item.message}</span>
-            </button>
-          ))}
+          <div className="notif-list">
+            {items.map((item) => (
+              <button
+                key={item._id}
+                type="button"
+                className={`notif-item ${item.isRead ? "read" : ""}`}
+                onClick={() => markRead(item._id)}
+              >
+                <div className="notif-item-header">
+                  <strong>{item.title}</strong>
+                  <span className="notif-time">{formatTimeAgo(item.createdAt)}</span>
+                </div>
+                <span>{item.message}</span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>

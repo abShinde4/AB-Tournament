@@ -10,10 +10,19 @@ const listUsers = async (req, res) => {
   const page = Math.max(Number(req.query.page) || 1, 1);
   const limit = Math.min(Math.max(Number(req.query.limit) || 15, 1), 100);
   const skip = (page - 1) * limit;
+  const search = (req.query.search || "").trim();
+
+  const filter = {};
+  if (search) {
+    filter.$or = [
+      { username: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } },
+    ];
+  }
 
   const [users, total] = await Promise.all([
-    User.find({}, "-password").sort({ createdAt: -1 }).skip(skip).limit(limit),
-    User.countDocuments(),
+    User.find(filter, "-password").sort({ createdAt: -1 }).skip(skip).limit(limit),
+    User.countDocuments(filter),
   ]);
 
   return res.json({

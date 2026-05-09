@@ -168,6 +168,17 @@ const publishRoomSchema = z.object({
   query: z.object({}).optional(),
 });
 
+const sendNotificationSchema = z.object({
+  body: z.object({
+    title: z.string().trim().min(3).max(120),
+    message: z.string().trim().min(5).max(300),
+    recipientType: z.enum(["all", "specific"]),
+    userId: objectId.optional(),
+  }),
+  params: z.object({}).optional(),
+  query: z.object({}).optional(),
+});
+
 const verifyPlayerSchema = z.object({
   body: z.object({
     notes: z.string().trim().max(500).optional(),
@@ -192,4 +203,5 @@ module.exports = {
   adminPublishResultsSchema,
   publishRoomSchema,
   verifyPlayerSchema,
+  sendNotificationSchema,
 };

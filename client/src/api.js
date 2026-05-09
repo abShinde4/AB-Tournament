@@ -62,6 +62,8 @@ export const api = {
     request(`/notifications${params ? `?${params}` : ""}`),
   markNotificationRead: (notificationId) =>
     request(`/notifications/${notificationId}/read`, { method: "PATCH" }),
+  sendNotification: (payload) =>
+    request("/notifications/send", { method: "POST", body: JSON.stringify(payload) }),
   getAdminStats: () => request("/admin/stats"),
   getAdminUsers: (params = "") => request(`/admin/users${params ? `?${params}` : ""}`),
   getAdminRegistrations: (params = "") =>

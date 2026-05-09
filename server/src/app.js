@@ -14,6 +14,7 @@ const leaderboardRoutes = require("./routes/leaderboardRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const userRoutes = require("./routes/userRoutes");
+const Notification = require("./models/Notification");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -61,6 +62,42 @@ app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/user", userRoutes);
+
+const ensureSampleNotifications = async () => {
+  try {
+    const total = await Notification.countDocuments();
+    if (total === 0) {
+      await Notification.insertMany([
+        {
+          type: "general",
+          title: "Welcome to AB Tournament",
+          message: "Get ready to join tournaments, win prizes, and climb the leaderboard!",
+          isGlobal: true,
+          readBy: [],
+        },
+        {
+          type: "general",
+          title: "Tournament starting soon",
+          message: "Check your registered tournaments and prepare for the upcoming matches.",
+          isGlobal: true,
+          readBy: [],
+        },
+        {
+          type: "general",
+          title: "Prize distributed",
+          message: "Winners have been rewarded. Visit the results page to see the leaderboard.",
+          isGlobal: true,
+          readBy: [],
+        },
+      ]);
+    }
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error("Failed to seed sample notifications:", error);
+  }
+};
+
+ensureSampleNotifications();
 
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 

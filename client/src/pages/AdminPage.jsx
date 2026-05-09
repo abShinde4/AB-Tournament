@@ -27,6 +27,13 @@ const AdminPage = () => {
   const [resultMatchId, setResultMatchId] = useState("");
   const [publishing, setPublishing] = useState(false);
   const [publishingMatchId, setPublishingMatchId] = useState(null);
+  const [notificationTitle, setNotificationTitle] = useState("");
+  const [notificationMessage, setNotificationMessage] = useState("");
+  const [recipientType, setRecipientType] = useState("all");
+  const [userSearch, setUserSearch] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [searchingUsers, setSearchingUsers] = useState(false);
 
   const canAccess = user?.role === "admin";
 
@@ -150,6 +157,49 @@ const AdminPage = () => {
     }
   };
 
+  const searchUsers = async (query) => {
+    setSearchingUsers(true);
+    try {
+      const res = await api.getAdminUsers(`limit=10&search=${encodeURIComponent(query)}`);
+      setSearchResults(res.data || []);
+    } catch (error) {
+      toast.error(error.message || "Failed to search users");
+    } finally {
+      setSearchingUsers(false);
+    }
+  };
+
+  const sendNotification = async (event) => {
+    event.preventDefault();
+    try {
+      if (!notificationTitle.trim() || !notificationMessage.trim()) {
+        toast.error("Please enter title and message.");
+        return;
+      }
+      if (recipientType === "specific" && !selectedUser) {
+        toast.error("Please select a user.");
+        return;
+      }
+
+      await api.sendNotification({
+        title: notificationTitle.trim(),
+        message: notificationMessage.trim(),
+        recipientType,
+        userId: recipientType === "specific" ? selectedUser?._id : undefined,
+      });
+
+      toast.success("Notification sent successfully.");
+      setNotificationTitle("");
+      setNotificationMessage("");
+      setRecipientType("all");
+      setUserSearch("");
+      setSearchResults([]);
+      setSelectedUser(null);
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
   const verifyRegistration = async (registrationId) => {
     try {
       await api.verifyAdminPlayer(registrationId, { notes: "Verified by admin" });
@@ -204,6 +254,77 @@ const AdminPage = () => {
           <input type="datetime-local" value={matchForm.startTime} onChange={(e) => setMatchForm({ ...matchForm, startTime: e.target.value })} required />
           <input type="number" placeholder="Max players" value={matchForm.maxPlayers} onChange={(e) => setMatchForm({ ...matchForm, maxPlayers: e.target.value })} required />
           <button className="btn btn-primary" type="submit">Create</button>
+        </form>
+      </section>
+
+      <section className="card">
+        <h3>Send Notification</h3>
+        <form className="form-grid" onSubmit={sendNotification}>
+          <input
+            placeholder="Notification Title"
+            value={notificationTitle}
+            onChange={(e) => setNotificationTitle(e.target.value)}
+            required
+          />
+          <textarea
+            placeholder="Notification Message"
+            value={notificationMessage}
+            onChange={(e) => setNotificationMessage(e.target.value)}
+            rows={4}
+            required
+          />
+          <div>
+            <label htmlFor="recipientType">Recipient</label>
+            <select
+              id="recipientType"
+              value={recipientType}
+              onChange={(e) => {
+                setRecipientType(e.target.value);
+                if (e.target.value === "all") {
+                  setSelectedUser(null);
+                  setUserSearch("");
+                  setSearchResults([]);
+                }
+              }}
+            >
+              <option value="all">All Users</option>
+              <option value="specific">Specific User</option>
+            </select>
+          </div>
+          {recipientType === "specific" && (
+            <>
+              <input
+                placeholder="Search username or email"
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+              />
+              <button
+                className="btn btn-secondary"
+                type="button"
+                disabled={!userSearch.trim() || searchingUsers}
+                onClick={() => searchUsers(userSearch.trim())}
+              >
+                {searchingUsers ? "Searching..." : "Search Users"}
+              </button>
+              <select
+                value={selectedUser?._id || ""}
+                onChange={(e) => {
+                  const selected = searchResults.find((u) => u._id === e.target.value);
+                  setSelectedUser(selected || null);
+                }}
+              >
+                <option value="">Select user</option>
+                {searchResults.map((u) => (
+                  <option key={u._id} value={u._id}>
+                    {u.username} ({u.email})
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
+          <button className="btn btn-primary" type="submit">
+            Send Notification
+          </button>
         </form>
       </section>
 
