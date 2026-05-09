@@ -32,6 +32,8 @@ const serializeMatch = (match, joinedMatchIds = new Set()) => {
     isRoomPublished: item.isRoomPublished,
     roomUnlockTime: item.roomUnlockTime,
     isRoomVisible,
+    joinedPlayersCount: item.joinedPlayersCount || 0,
+    remainingSlots: (item.maxPlayers || 100) - (item.joinedPlayersCount || 0),
   };
 
   const userJoined = joinedMatchIds.has(String(match._id));
@@ -53,6 +55,7 @@ const defaultMatches = () => [
     startTime: new Date(Date.now() + 1000 * 60 * 60 * 3),
     status: "Upcoming",
     maxPlayers: 100,
+    joinedPlayersCount: 0,
   },
   {
     title: "AB BGMI Squad Clash",
@@ -62,6 +65,7 @@ const defaultMatches = () => [
     startTime: new Date(Date.now() + 1000 * 60 * 60 * 7),
     status: "Upcoming",
     maxPlayers: 100,
+    joinedPlayersCount: 0,
   },
 ];
 
@@ -228,6 +232,13 @@ const joinMatch = async (req, res) => {
         }
         throw error;
       }
+
+      // Increment joined players count
+      await Match.findByIdAndUpdate(
+        matchId,
+        { $inc: { joinedPlayersCount: 1 } },
+        { session }
+      );
 
       // Deduct entry fee and add XP (atomic operations)
       const xpEarned = 10;

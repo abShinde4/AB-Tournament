@@ -13,6 +13,7 @@ const matchSchema = new mongoose.Schema(
       default: "Upcoming",
     },
     maxPlayers: { type: Number, default: 100, min: 1 },
+    joinedPlayersCount: { type: Number, default: 0, min: 0 },
     roomId: { type: String, default: "", trim: true },
     roomPassword: { type: String, default: "", trim: true },
     roomUnlockTime: { type: Date, default: null },

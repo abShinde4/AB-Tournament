@@ -4,6 +4,7 @@ import { api } from "../api";
 import { useAuth } from "../context/useAuth";
 import Skeleton from "../components/Skeleton";
 import Countdown from "../components/Countdown";
+import { PlayerCountBar } from "../components/PlayerCountBar";
 
 const formatCountdown = (msLeft) => {
   if (msLeft <= 0) return "Match Started";
@@ -92,6 +93,8 @@ const TournamentPage = () => {
         xp: res.xp ?? prev?.xp,
         level: res.level ?? prev?.level,
       }));
+      // Auto-refresh matches to show updated count
+      await loadMatches();
     } catch (error) {
       toast.error(error.message);
     } finally {
@@ -188,13 +191,18 @@ const TournamentPage = () => {
           </div>
         )}
 
+        <PlayerCountBar 
+          joinedCount={match.joinedPlayersCount || 0} 
+          maxPlayers={match.maxPlayers || 100}
+        />
+
         <button
           className="btn btn-primary"
           onClick={() => handleJoin(match._id)}
           type="button"
-          disabled={loadingId === match._id}
+          disabled={loadingId === match._id || match.remainingSlots === 0}
         >
-          {loadingId === match._id ? "Joining..." : "Join Now"}
+          {loadingId === match._id ? "Joining..." : match.remainingSlots === 0 ? "Tournament Full" : "Join Now"}
         </button>
       </article>
     );
