@@ -9,6 +9,8 @@
     radial-gradient(circle at 85% 5%, rgba(120, 70, 255, 0.2), transparent 30%),
     #090b13;
   color: #e5e8ff;
+  display: flex;
+  flex-direction: column;
 }
 
 .flash-screen {
@@ -1008,5 +1010,64 @@ td {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Footer Styles */
+.footer {
+  margin-top: auto;
+  border-top: 1px solid rgba(48, 54, 87, 0.5);
+  background: rgba(9, 11, 19, 0.95);
+  padding: 1.5rem 0;
+}
+
+.footer-content {
+  width: min(1120px, 93%);
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  color: #a6f2d5;
+}
+
+.footer-nav {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.footer-nav a {
+  color: #dfe4ff;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footer-nav a:hover {
+  color: #86ffd8;
+}
+
+.footer-copyright {
+  color: #9aa5c7;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .footer-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .footer-nav {
+    order: 3;
+    width: 100%;
+    justify-content: center;
   }
 }
