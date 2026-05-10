@@ -5,7 +5,7 @@ const PrivacyPolicyPage = () => {
     <main className="page">
       <section className="card">
         <h1>Privacy Policy</h1>
-        <p><strong>Effective Date:</strong> [Insert Date]</p>
+        <p><strong>Effective Date:</strong> [May 10, 2026]</p>
 
         <h2>1. Introduction</h2>
         <p>Welcome to AB Tournament ("we," "us," or "our"). We are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our platform for BGMI and Free Fire tournaments.</p>

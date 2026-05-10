@@ -5,7 +5,7 @@ const TermsAndConditionsPage = () => {
     <main className="page">
       <section className="card">
         <h1>Terms & Conditions</h1>
-        <p><strong>Effective Date:</strong> [Insert Date]</p>
+        <p><strong>Effective Date:</strong> [May 10, 2026]</p>
 
         <h2>1. Acceptance of Terms</h2>
         <p>By accessing and using AB Tournament, you accept and agree to be bound by the terms and provision of this agreement.</p>
