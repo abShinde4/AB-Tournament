@@ -1016,9 +1016,10 @@ td {
 /* Footer Styles */
 .footer {
   margin-top: auto;
-  border-top: 1px solid rgba(48, 54, 87, 0.5);
-  background: rgba(9, 11, 19, 0.95);
-  padding: 1.5rem 0;
+  border-top: 1px solid rgba(72, 92, 151, 0.38);
+  background: rgba(10, 12, 20, 0.96);
+  box-shadow: inset 0 1px 0 rgba(115, 139, 255, 0.08), 0 0 28px rgba(38, 128, 255, 0.03);
+  padding: 1.75rem 0;
 }
 
 .footer-content {
@@ -1033,35 +1034,74 @@ td {
 
 .footer-brand {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 700;
-  color: #a6f2d5;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: #b7f4d8;
+  max-width: 420px;
+}
+
+.footer-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.footer-subtitle,
+.footer-email {
+  color: #d7e0ff;
+  opacity: 0.82;
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+.footer-email {
+  color: #8cffdf;
+  text-decoration: none;
+  font-weight: 600;
 }
 
 .footer-nav {
   display: flex;
-  gap: 1.5rem;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  justify-content: center;
 }
 
 .footer-nav a {
   color: #dfe4ff;
   text-decoration: none;
-  transition: color 0.2s ease;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
 }
 
 .footer-nav a:hover {
   color: #86ffd8;
+  border-color: rgba(134, 255, 216, 0.35);
+  background: rgba(134, 255, 216, 0.08);
 }
 
-.footer-copyright {
+.footer-trust {
   color: #9aa5c7;
-  font-size: 0.9rem;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  text-align: right;
+  min-width: 220px;
 }
 
 @media (max-width: 768px) {
   .footer-content {
     flex-direction: column;
+    text-align: center;
+    align-items: center;
+  }
+
+  .footer-brand,
+  .footer-trust {
+    width: 100%;
     text-align: center;
   }
 
@@ -1069,5 +1109,9 @@ td {
     order: 3;
     width: 100%;
     justify-content: center;
+  }
+
+  .footer-trust {
+    order: 2;
   }
 }
