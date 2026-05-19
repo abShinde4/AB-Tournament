@@ -32,6 +32,7 @@ const request = async (endpoint, options = {}) => {
 export const api = {
   getMatches: (params = "") => request(`/matches${params ? `?${params}` : ""}`),
   joinMatch: (matchId) => request(`/tournaments/${matchId}/join`, { method: "POST" }),
+  getMyMatchJoinRequests: () => request("/tournaments/join-requests/my"),
   getDashboard: () => request("/tournaments/dashboard/me"),
   getResults: (params = "") => request(`/results${params ? `?${params}` : ""}`),
   register: (payload) =>
@@ -48,10 +49,23 @@ export const api = {
   },
   addMoney: (payload) =>
     request("/wallet/add-money", { method: "POST", body: JSON.stringify(payload) }),
-  createPaymentOrder: (payload) =>
-    request("/wallet/create-order", { method: "POST", body: JSON.stringify(payload) }),
-  verifyPayment: (payload) =>
-    request("/wallet/verify-payment", { method: "POST", body: JSON.stringify(payload) }),
+  getPaymentLinks: () => request("/payments/links"),
+  // Wallet payment requests (manual UPI top-ups)
+  createWalletPaymentRequest: (payload) => {
+    const form = new FormData();
+    form.append("utr", payload.utr);
+    form.append("amount", payload.amount);
+    if (payload.screenshot) form.append("screenshot", payload.screenshot);
+    return request("/wallet/requests", { method: "POST", body: form });
+  },
+  getMyWalletPaymentRequests: () => request("/wallet/requests/my"),
+  submitTournamentPayment: (tournamentId, { utr, screenshot }) => {
+    const form = new FormData();
+    form.append("utr", utr);
+    if (screenshot) form.append("paymentScreenshot", screenshot);
+    return request(`/payments/tournament/${tournamentId}/submit`, { method: "POST", body: form });
+  },
+  getMyTournamentPayments: () => request("/payments/my"),
   getTransactions: (params = "") =>
     request(`/wallet/transactions${params ? `?${params}` : ""}`),
   withdraw: (payload) => request("/wallet/withdraw", { method: "POST", body: JSON.stringify(payload) }),
@@ -85,6 +99,23 @@ export const api = {
     request(`/admin/withdraw-approve/${id}`, { method: "PUT" }),
   rejectWithdrawRequest: (id) =>
     request(`/admin/withdraw-reject/${id}`, { method: "PUT" }),
+  getAdminPaymentRequests: (params = "") =>
+    request(`/admin/payment-requests${params ? `?${params}` : ""}`),
+  getAdminWalletPaymentRequests: (params = "") =>
+    request(`/admin/wallet-payment-requests${params ? `?${params}` : ""}`),
+  approvePaymentRequest: (id) =>
+    request(`/admin/payment-approve/${id}`, { method: "PUT" }),
+  rejectPaymentRequest: (id, payload = {}) =>
+    request(`/admin/payment-reject/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  approveWalletPaymentRequest: (id) => request(`/admin/wallet-payment-approve/${id}`, { method: "PUT" }),
+  rejectWalletPaymentRequest: (id, payload = {}) =>
+    request(`/admin/wallet-payment-reject/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  getAdminMatchJoinRequests: (params = "") =>
+    request(`/admin/match-join-requests${params ? `?${params}` : ""}`),
+  approveMatchJoinRequest: (id) => request(`/admin/match-join-approve/${id}`, { method: "PUT" }),
+  rejectMatchJoinRequest: (id, payload = {}) =>
+    request(`/admin/match-join-reject/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  refreshMe: () => request("/auth/me"),
   createMatch: (payload) =>
     request("/tournaments", { method: "POST", body: JSON.stringify(payload) }),
   updateMatch: (matchId, payload) =>

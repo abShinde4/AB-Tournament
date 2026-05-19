@@ -4,6 +4,8 @@ const User = require("../models/User");
 const Transaction = require("../models/Transaction");
 const Notification = require("../models/Notification");
 const Result = require("../models/Result");
+const TournamentPayment = require("../models/TournamentPayment");
+const MatchJoinRequest = require("../models/MatchJoinRequest");
 const mongoose = require("mongoose");
 const roomUnlockMs = 10 * 60 * 1000;
 
@@ -17,13 +19,22 @@ const normalizeMatchStatus = (match) => {
   return "Upcoming";
 };
 
-const serializeMatch = (match, joinedMatchIds = new Set()) => {
+const serializeMatch = (
+  match,
+  joinedMatchIds = new Set(),
+  paymentStatusMap = new Map(),
+  joinRequestStatusMap = new Map()
+) => {
   const item = typeof match.toObject === "function" ? match.toObject() : match;
   const now = Date.now();
   const unlockTime = item.roomUnlockTime ? new Date(item.roomUnlockTime).getTime() : null;
   const isRoomVisible = item.isRoomPublished && unlockTime && now >= unlockTime;
 
   const joinedPlayersCount = typeof item.joinedPlayersCount === "number" ? item.joinedPlayersCount : 0;
+  const userJoined = joinedMatchIds.has(String(item._id));
+  const paymentStatus = paymentStatusMap.get(String(item._id)) || null;
+  const joinRequestStatus = joinRequestStatusMap.get(String(item._id)) || null;
+
   const safe = {
     ...item,
     status: normalizeMatchStatus(match),
@@ -35,9 +46,10 @@ const serializeMatch = (match, joinedMatchIds = new Set()) => {
     isRoomVisible,
     joinedPlayersCount,
     remainingSlots: (item.maxPlayers || 100) - joinedPlayersCount,
+    isJoined: userJoined,
+    paymentStatus,
+    joinRequestStatus,
   };
-
-  const userJoined = joinedMatchIds.has(String(item._id));
   if (safe.isRoomVisible && userJoined) {
     safe.roomId = item.roomId || "";
     safe.roomPassword = item.roomPassword || "";
@@ -89,12 +101,36 @@ const listMatches = async (req, res) => {
   ]);
 
   let joinedMatchIds = new Set();
+  let paymentStatusMap = new Map();
+  let joinRequestStatusMap = new Map();
   if (req.user?._id && matches.length > 0) {
-    const registrations = await Registration.find({
-      user: req.user._id,
-      match: { $in: matches.map((m) => m._id) },
-    }).select("match");
+    const matchIds = matches.map((m) => m._id);
+    const [registrations, payments, joinRequests] = await Promise.all([
+      Registration.find({ user: req.user._id, match: { $in: matchIds } }).select("match"),
+      TournamentPayment.find({
+        user: req.user._id,
+        tournament: { $in: matchIds },
+        paymentStatus: { $in: ["pending", "rejected"] },
+      })
+        .sort({ createdAt: -1 })
+        .select("tournament paymentStatus"),
+      MatchJoinRequest.find({
+        user: req.user._id,
+        match: { $in: matchIds },
+        status: { $in: ["pending", "rejected"] },
+      })
+        .sort({ createdAt: -1 })
+        .select("match status"),
+    ]);
     joinedMatchIds = new Set(registrations.map((entry) => String(entry.match)));
+    payments.forEach((p) => {
+      const key = String(p.tournament);
+      if (!paymentStatusMap.has(key)) paymentStatusMap.set(key, p.paymentStatus);
+    });
+    joinRequests.forEach((jr) => {
+      const key = String(jr.match);
+      if (!joinRequestStatusMap.has(key)) joinRequestStatusMap.set(key, jr.status);
+    });
   }
 
   const matchIds = matches.map((match) => match._id);
@@ -126,7 +162,9 @@ const listMatches = async (req, res) => {
   }
 
   return res.json({
-    data: patchedMatches.map((match) => serializeMatch(match, joinedMatchIds)),
+    data: patchedMatches.map((match) =>
+      serializeMatch(match, joinedMatchIds, paymentStatusMap, joinRequestStatusMap)
+    ),
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     serverTime: new Date().toISOString(),
   });
@@ -346,8 +384,10 @@ const dashboard = async (req, res) => {
     rank: 1,
   });
 
+  const userDoc = await User.findById(req.user._id).select("walletBalance virtualFunds");
   return res.json({
-    walletBalance: (await User.findById(req.user._id).select("walletBalance"))?.walletBalance ?? 0,
+    walletBalance: userDoc?.walletBalance ?? 0,
+    virtualFunds: userDoc?.virtualFunds ?? 0,
     stats: {
       totalMatchesJoined: registrations.length,
       totalWins: resultsCount,
@@ -416,7 +456,6 @@ module.exports = {
   createMatch,
   updateMatch,
   deleteMatch,
-  joinMatch,
   dashboard,
   getMatchDetails,
 };

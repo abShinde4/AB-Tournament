@@ -26,6 +26,11 @@ const userSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    virtualFunds: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     avatar: { type: String, default: "" },
     xp: { type: Number, default: 0, min: 0 },
     level: { type: Number, default: 1, min: 1 },

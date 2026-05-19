@@ -29,7 +29,7 @@ const Navbar = () => {
           <>
             <NotificationBell />
             <span className="chip">{user?.username}</span>
-            <span className="chip wallet-chip">INR {user?.walletBalance ?? 0}</span>
+            <span className="chip wallet-chip">₹{user?.walletBalance ?? 0}</span>
             <button className="btn btn-secondary" onClick={logout} type="button">
               Logout
             </button>

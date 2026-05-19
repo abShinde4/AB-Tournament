@@ -4,10 +4,13 @@ const {
   createMatch,
   updateMatch,
   deleteMatch,
-  joinMatch,
   dashboard,
   getMatchDetails,
 } = require("../controllers/tournamentController");
+const {
+  submitMatchJoinRequest,
+  listMyMatchJoinRequests,
+} = require("../controllers/matchJoinRequestController");
 const { protect, optionalAuth } = require("../middleware/auth");
 const { requireAdmin } = require("../middleware/admin");
 const { requireMatchJoined } = require("../middleware/matchAccess");
@@ -20,7 +23,8 @@ router.get("/", optionalAuth, listMatches);
 router.post("/", protect, requireAdmin, validate(createMatchSchema), createMatch);
 router.patch("/:matchId", protect, requireAdmin, validate(updateMatchSchema), updateMatch);
 router.delete("/:matchId", protect, requireAdmin, validate(idParamSchema), deleteMatch);
-router.post("/:matchId/join", protect, validate(idParamSchema), joinMatch);
+router.post("/:matchId/join", protect, validate(idParamSchema), submitMatchJoinRequest);
+router.get("/join-requests/my", protect, listMyMatchJoinRequests);
 router.get("/:matchId/details", protect, validate(idParamSchema), requireMatchJoined, getMatchDetails);
 router.get("/dashboard/me", protect, dashboard);
 

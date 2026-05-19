@@ -5,6 +5,7 @@ import { useAuth } from "../context/useAuth";
 import Skeleton from "../components/Skeleton";
 import Countdown from "../components/Countdown";
 import { PlayerCountBar } from "../components/PlayerCountBar";
+import WalletRechargeModal from "../components/WalletRechargeModal";
 
 const formatCountdown = (msLeft) => {
   if (msLeft <= 0) return "Match Started";
@@ -23,6 +24,7 @@ const TournamentPage = () => {
   const [activeFilter, setActiveFilter] = useState("all");
   const [revealedPasswords, setRevealedPasswords] = useState({});
   const [roomUnlockNotified, setRoomUnlockNotified] = useState({});
+  const [walletModal, setWalletModal] = useState({ open: false, amount: 100, title: "Pay Now" });
   const { isAuthenticated, setUser } = useAuth();
 
   const loadMatches = async () => {
@@ -85,18 +87,16 @@ const TournamentPage = () => {
     }
     try {
       setLoadingId(matchId);
-      const res = await api.joinMatch(matchId);
-      toast.success("Match joined successfully");
-      setUser((prev) => ({
-        ...prev,
-        walletBalance: res.walletBalance,
-        xp: res.xp ?? prev?.xp,
-        level: res.level ?? prev?.level,
-      }));
-      // Auto-refresh matches to show updated count
+      await api.joinMatch(matchId);
+      toast.success("Join request submitted. Awaiting admin approval.");
       await loadMatches();
     } catch (error) {
-      toast.error(error.message);
+      const msg = error.message || "Failed to join match.";
+      if (msg.toLowerCase().includes("insufficient")) {
+        toast.error("Insufficient Wallet Balance");
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setLoadingId("");
     }
@@ -196,14 +196,46 @@ const TournamentPage = () => {
           maxPlayers={match.maxPlayers || 100}
         />
 
-        <button
-          className="btn btn-primary"
-          onClick={() => handleJoin(match._id)}
-          type="button"
-          disabled={loadingId === match._id || match.remainingSlots === 0}
-        >
-          {loadingId === match._id ? "Joining..." : match.remainingSlots === 0 ? "Tournament Full" : "Join Now"}
-        </button>
+        <div className="tournament-actions">
+          {match.isJoined ? (
+            <button className="btn btn-secondary" type="button" disabled>
+              Joined
+            </button>
+          ) : match.joinRequestStatus === "pending" ? (
+            <button className="btn btn-secondary" type="button" disabled>
+              Pending Approval
+            </button>
+          ) : (
+            <>
+              <button
+                className="btn btn-primary"
+                type="button"
+                disabled={match.remainingSlots === 0}
+                onClick={() => {
+                  if (!isAuthenticated) {
+                    toast.error("Please login first.");
+                    return;
+                  }
+                  setWalletModal({
+                    open: true,
+                    amount: match.entryFee || 20,
+                    title: `Recharge — ${match.title}`,
+                  });
+                }}
+              >
+                {match.remainingSlots === 0 ? "Tournament Full" : "Pay Now"}
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => handleJoin(match._id)}
+                type="button"
+                disabled={loadingId === match._id || match.remainingSlots === 0}
+              >
+                {loadingId === match._id ? "Requesting..." : "Join with Wallet"}
+              </button>
+            </>
+          )}
+        </div>
       </article>
     );
   };
@@ -280,6 +312,13 @@ const TournamentPage = () => {
           <p>New matches will appear here soon. Please check again in a few minutes.</p>
         </article>
       )}
+
+      <WalletRechargeModal
+        isOpen={walletModal.open}
+        suggestedAmount={walletModal.amount}
+        title={walletModal.title}
+        onClose={() => setWalletModal({ open: false, amount: 100, title: "Pay Now" })}
+      />
     </main>
   );
 };

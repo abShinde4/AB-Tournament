@@ -23,6 +23,9 @@ const AdminPage = () => {
   const [registrations, setRegistrations] = useState([]);
   const [walletOverview, setWalletOverview] = useState(null);
   const [withdrawRequests, setWithdrawRequests] = useState([]);
+  const [paymentRequests, setPaymentRequests] = useState([]);
+  const [walletPaymentRequests, setWalletPaymentRequests] = useState([]);
+  const [matchJoinRequests, setMatchJoinRequests] = useState([]);
   const [matchForm, setMatchForm] = useState(initialMatch);
   const [resultMatchId, setResultMatchId] = useState("");
   const [publishing, setPublishing] = useState(false);
@@ -38,13 +41,17 @@ const AdminPage = () => {
   const canAccess = user?.role === "admin";
 
   const load = async () => {
-    const [statsRes, matchesRes, usersRes, regRes, walletRes, withdrawRes] = await Promise.all([
+    const [statsRes, matchesRes, usersRes, regRes, walletRes, withdrawRes, paymentRes, walletPaymentRes, matchJoinRes] =
+      await Promise.all([
       api.getAdminStats(),
       api.getMatches("limit=30"),
       api.getAdminUsers("limit=12"),
       api.getAdminRegistrations("limit=20"),
       api.getAdminWalletOverview(),
       api.getAdminWithdrawRequests("limit=50"),
+      api.getAdminPaymentRequests("limit=50&status=pending"),
+      api.getAdminWalletPaymentRequests("limit=50&status=pending"),
+      api.getAdminMatchJoinRequests("limit=50&status=pending"),
     ]);
     // eslint-disable-next-line no-console
     console.log("Admin stats received:", statsRes);
@@ -63,6 +70,9 @@ const AdminPage = () => {
     setRegistrations(regRes.data || []);
     setWalletOverview(walletRes);
     setWithdrawRequests(withdrawRes.data || []);
+    setPaymentRequests(paymentRes.data || []);
+    setWalletPaymentRequests(walletPaymentRes.data || []);
+    setMatchJoinRequests(matchJoinRes.data || []);
   };
 
   useEffect(() => {
@@ -151,6 +161,68 @@ const AdminPage = () => {
     try {
       await api.rejectWithdrawRequest(requestId);
       toast.success("Withdraw rejected and refunded");
+      load();
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const apiOrigin = (import.meta.env.VITE_API_URL || "http://localhost:5000/api").replace(/\/api\/?$/, "");
+
+  const approvePayment = async (requestId) => {
+    try {
+      await api.approvePaymentRequest(requestId);
+      toast.success("Payment approved — user joined tournament");
+      load();
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const approveWalletPayment = async (requestId) => {
+    try {
+      await api.approveWalletPaymentRequest(requestId);
+      toast.success("Payment Approved — Wallet Credited");
+      load();
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const approveMatchJoin = async (requestId) => {
+    try {
+      await api.approveMatchJoinRequest(requestId);
+      toast.success("Match Joined Successfully");
+      load();
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const rejectMatchJoin = async (requestId) => {
+    try {
+      await api.rejectMatchJoinRequest(requestId, { reason: "Join request could not be approved" });
+      toast.success("Join request rejected");
+      load();
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const rejectPayment = async (requestId) => {
+    try {
+      await api.rejectPaymentRequest(requestId, { reason: "Payment could not be verified" });
+      toast.success("Payment rejected");
+      load();
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const rejectWalletPayment = async (requestId) => {
+    try {
+      await api.rejectWalletPaymentRequest(requestId, { reason: "Payment could not be verified" });
+      toast.success("Payment Rejected");
       load();
     } catch (error) {
       toast.error(error.message);
@@ -463,6 +535,200 @@ const AdminPage = () => {
       <section className="card">
         <h3>Wallet Overview</h3>
         <p>Total Wallet Balance: INR {walletOverview?.totalWalletBalance ?? 0}</p>
+      </section>
+
+      <section className="card">
+        <h3>Payment Verification</h3>
+        <p className="muted">Approve UTR payments to register users for tournaments.</p>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Tournament</th>
+                <th>Amount</th>
+                <th>UTR</th>
+                <th>Screenshot</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paymentRequests.length === 0 ? (
+                <tr>
+                  <td colSpan="7">No pending payment requests.</td>
+                </tr>
+              ) : (
+                paymentRequests.map((p) => (
+                  <tr key={p._id}>
+                    <td>
+                      {p.user?.username || "User"}
+                      <br />
+                      <span className="muted">{p.user?.email}</span>
+                    </td>
+                    <td>{p.tournament?.title || "—"}</td>
+                    <td>₹{p.paymentAmount}</td>
+                    <td>{p.utr}</td>
+                    <td>
+                      {p.paymentScreenshot ? (
+                        <a
+                          href={`${apiOrigin}${p.paymentScreenshot}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          View
+                        </a>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td>{p.paymentStatus}</td>
+                    <td>
+                      {p.paymentStatus === "pending" ? (
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <button className="btn btn-secondary" type="button" onClick={() => approvePayment(p._id)}>
+                            Approve
+                          </button>
+                          <button className="btn btn-secondary" type="button" onClick={() => rejectPayment(p._id)}>
+                            Reject
+                          </button>
+                        </div>
+                      ) : (
+                        <span>-</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="card">
+        <h3>Wallet Recharge Requests</h3>
+        <p className="muted">Manual Payment Verification — approve UPI wallet top-ups.</p>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>User ID</th>
+                <th>Amount</th>
+                <th>UTR</th>
+                <th>Screenshot</th>
+                <th>Balance</th>
+                <th>Time</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {walletPaymentRequests.length === 0 ? (
+                <tr>
+                  <td colSpan="9">No pending wallet recharge requests.</td>
+                </tr>
+              ) : (
+                walletPaymentRequests.map((p) => (
+                  <tr key={p._id}>
+                    <td>
+                      {p.user?.username || p.username || "User"}
+                      <br />
+                      <span className="muted">{p.user?.email}</span>
+                    </td>
+                    <td className="muted">{String(p.user?._id || "").slice(-8)}</td>
+                    <td>₹{p.amount}</td>
+                    <td>{p.utr}</td>
+                    <td>
+                      {p.screenshot ? (
+                        <a href={`${apiOrigin}${p.screenshot}`} target="_blank" rel="noopener noreferrer">View</a>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td>₹{p.user?.walletBalance ?? 0}</td>
+                    <td>{new Date(p.createdAt).toLocaleString()}</td>
+                    <td>
+                      <span className={`status-badge status-${p.status}`}>{p.status}</span>
+                    </td>
+                    <td>
+                      {p.status === "pending" ? (
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <button className="btn btn-secondary" type="button" onClick={() => approveWalletPayment(p._id)}>
+                            Approve Recharge
+                          </button>
+                          <button className="btn btn-secondary" type="button" onClick={() => rejectWalletPayment(p._id)}>
+                            Reject Recharge
+                          </button>
+                        </div>
+                      ) : (
+                        <span>-</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="card">
+        <h3>Match Join Requests</h3>
+        <p className="muted">Approve wallet-based tournament entries.</p>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>Tournament</th>
+                <th>Entry Fee</th>
+                <th>Balance</th>
+                <th>Status</th>
+                <th>Time</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {matchJoinRequests.length === 0 ? (
+                <tr>
+                  <td colSpan="7">No pending match join requests.</td>
+                </tr>
+              ) : (
+                matchJoinRequests.map((jr) => (
+                  <tr key={jr._id}>
+                    <td>
+                      {jr.user?.username || jr.username}
+                      <br />
+                      <span className="muted">{jr.user?.email}</span>
+                    </td>
+                    <td>{jr.match?.title || "—"}</td>
+                    <td>₹{jr.entryFee}</td>
+                    <td>₹{jr.user?.walletBalance ?? 0}</td>
+                    <td>
+                      <span className={`status-badge status-${jr.status}`}>{jr.status}</span>
+                    </td>
+                    <td>{new Date(jr.createdAt).toLocaleString()}</td>
+                    <td>
+                      {jr.status === "pending" ? (
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <button className="btn btn-secondary" type="button" onClick={() => approveMatchJoin(jr._id)}>
+                            Approve Join
+                          </button>
+                          <button className="btn btn-secondary" type="button" onClick={() => rejectMatchJoin(jr._id)}>
+                            Reject Join
+                          </button>
+                        </div>
+                      ) : (
+                        <span>-</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section className="card">

@@ -1,19 +1,20 @@
 const User = require("../models/User");
 const Transaction = require("../models/Transaction");
 const Notification = require("../models/Notification");
-const crypto = require("crypto");
-const Razorpay = require("razorpay");
 const WithdrawRequest = require("../models/WithdrawRequest");
 const mongoose = require("mongoose");
 
-const creditWallet = async ({ userId, amountInr, referenceId, description }) => {
+const creditWallet = async ({ userId, amountInr, referenceId, description, session, creditVirtualFunds = true }) => {
+  const inc = { walletBalance: amountInr };
+  if (creditVirtualFunds) inc.virtualFunds = amountInr;
+
   const updatedUser = await User.findByIdAndUpdate(
     userId,
-    { $inc: { walletBalance: amountInr } },
-    { new: true }
+    { $inc: inc },
+    { new: true, session }
   ).select("-password");
 
-  await Transaction.create({
+  const txPayload = {
     user: userId,
     type: "credit",
     amount: amountInr,
@@ -21,28 +22,38 @@ const creditWallet = async ({ userId, amountInr, referenceId, description }) => 
     description,
     referenceId,
     status: "success",
-  });
+  };
 
-  await Notification.create({
+  if (session) {
+    await Transaction.create([txPayload], { session });
+  } else {
+    await Transaction.create(txPayload);
+  }
+
+  const notificationPayload = {
     user: userId,
     type: "wallet_credit",
     title: "Money Added",
     message: `INR ${amountInr} added to your wallet successfully.`,
     metadata: { amount: amountInr, referenceId },
-  });
+  };
+
+  if (session) {
+    await Notification.create([notificationPayload], { session });
+  } else {
+    await Notification.create(notificationPayload);
+  }
 
   return updatedUser;
 };
 
-const getRazorpayClient = () => {
-  const keyId = process.env.RAZORPAY_KEY_ID;
-  const keySecret = process.env.RAZORPAY_KEY_SECRET;
-  if (!keyId || !keySecret) return null;
-
-  return new Razorpay({ key_id: keyId, key_secret: keySecret });
-};
-
 const addMoney = async (req, res) => {
+  if (process.env.NODE_ENV === "production") {
+    return res.status(403).json({
+      message: "Direct wallet top-up is disabled. Use Pay Now on a tournament to pay via UPI.",
+    });
+  }
+
   const { amount } = req.validated.body;
   const referenceId = `PAY_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
 
@@ -50,80 +61,35 @@ const addMoney = async (req, res) => {
     userId: req.user._id,
     amountInr: amount,
     referenceId,
-    description: "Wallet top-up via simulated gateway",
+    description: "Wallet top-up (development only)",
   });
 
   return res.status(201).json({
     message: "Money added successfully",
     walletBalance: updatedUser.walletBalance,
+    virtualFunds: updatedUser.virtualFunds,
     transactionRef: referenceId,
   });
 };
 
-const createPaymentOrder = async (req, res) => {
-  const { amount } = req.validated.body;
-  const razorpay = getRazorpayClient();
-  if (!razorpay) {
-    return res.status(501).json({ message: "Payment gateway not configured" });
+const debitWalletAndVirtualFunds = async ({ userId, amountInr, session }) => {
+  const updatedUser = await User.findOneAndUpdate(
+    {
+      _id: userId,
+      walletBalance: { $gte: amountInr },
+      virtualFunds: { $gte: amountInr },
+    },
+    { $inc: { walletBalance: -amountInr, virtualFunds: -amountInr } },
+    { new: true, session }
+  ).select("-password");
+
+  if (!updatedUser) {
+    const err = new Error("Insufficient Wallet Balance");
+    err.statusCode = 400;
+    throw err;
   }
 
-  const referenceId = `PAY_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-  const amountPaise = Math.round(amount * 100);
-
-  const order = await razorpay.orders.create({
-    amount: amountPaise,
-    currency: "INR",
-    receipt: referenceId,
-    payment_capture: 1,
-  });
-
-  return res.status(201).json({
-    orderId: order.id,
-    amountPaise,
-    currency: order.currency,
-    razorpayKeyId: process.env.RAZORPAY_KEY_ID,
-    referenceId,
-  });
-};
-
-const verifyPaymentAndCredit = async (req, res) => {
-  const razorpay = getRazorpayClient();
-  if (!razorpay) {
-    return res.status(501).json({ message: "Payment gateway not configured" });
-  }
-
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.validated.body;
-  const keySecret = process.env.RAZORPAY_KEY_SECRET;
-
-  const expectedSignature = crypto
-    .createHmac("sha256", keySecret)
-    .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-    .digest("hex");
-
-  // Prevent timing attacks; signature compare is constant-time at Buffer level
-  const matches = Buffer.from(expectedSignature).equals(Buffer.from(razorpay_signature));
-  if (!matches) {
-    return res.status(400).json({ message: "Invalid payment signature" });
-  }
-
-  // Fetch order to get authoritative amount/receipt.
-  const order = await razorpay.orders.fetch(razorpay_order_id);
-  const amountPaise = order?.amount ?? 0;
-  const referenceId = order?.receipt ?? `PAY_${Date.now()}`;
-  const amountInr = Number(amountPaise) / 100;
-
-  const updatedUser = await creditWallet({
-    userId: req.user._id,
-    amountInr,
-    referenceId,
-    description: `Wallet top-up via Razorpay (${razorpay_payment_id})`,
-  });
-
-  return res.status(201).json({
-    message: "Payment successful. Wallet credited.",
-    walletBalance: updatedUser.walletBalance,
-    transactionRef: referenceId,
-  });
+  return updatedUser;
 };
 
 const listTransactions = async (req, res) => {
@@ -194,8 +160,6 @@ const withdraw = async (req, res) => {
     await session.withTransaction(async () => {
       const user = await User.findById(userId).session(session).select("walletBalance emailVerified");
 
-      // Security: prevent withdrawals if email is not verified.
-      // For existing users, default emailVerified is true (see User model).
       if (user?.emailVerified === false && process.env.NODE_ENV === "production") {
         throw new Error("Email not verified.");
       }
@@ -231,7 +195,6 @@ const withdraw = async (req, res) => {
         }
       }
 
-      // Deduct wallet atomically (prevents negative wallet + race conditions).
       const updatedUser = await User.findOneAndUpdate(
         { _id: userId, walletBalance: { $gte: totalDebited } },
         { $inc: { walletBalance: -totalDebited } },
@@ -301,9 +264,9 @@ const withdraw = async (req, res) => {
 
 module.exports = {
   addMoney,
-  createPaymentOrder,
-  verifyPaymentAndCredit,
   listTransactions,
   withdraw,
   listWithdrawals,
+  creditWallet,
+  debitWalletAndVirtualFunds,
 };

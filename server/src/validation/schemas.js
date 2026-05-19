@@ -89,21 +89,25 @@ const addMoneySchema = z.object({
   query: z.object({}).optional(),
 });
 
-const createPaymentOrderSchema = z.object({
+const submitPaymentSchema = z.object({
   body: z.object({
-    amount: z.number().min(10).max(50000),
+    utr: z.string().trim().min(6).max(50),
   }),
-  params: z.object({}).optional(),
+  params: z.object({ tournamentId: objectId }),
   query: z.object({}).optional(),
 });
 
-const verifyPaymentSchema = z.object({
+const paymentIdParamSchema = z.object({
   body: z.object({
-    razorpay_order_id: z.string().min(1),
-    razorpay_payment_id: z.string().min(1),
-    razorpay_signature: z.string().min(1),
-  }),
-  params: z.object({}).optional(),
+    reason: z.string().trim().max(300).optional(),
+  }).optional(),
+  params: z.object({ id: objectId }),
+  query: z.object({}).optional(),
+});
+
+const tournamentIdParamSchema = z.object({
+  body: z.object({}).optional(),
+  params: z.object({ tournamentId: objectId }),
   query: z.object({}).optional(),
 });
 
@@ -195,8 +199,9 @@ module.exports = {
   idParamSchema,
   resultsPublishSchema,
   addMoneySchema,
-  createPaymentOrderSchema,
-  verifyPaymentSchema,
+  submitPaymentSchema,
+  paymentIdParamSchema,
+  tournamentIdParamSchema,
   withdrawSchema,
   withdrawIdParamSchema,
   updateProfileSchema,

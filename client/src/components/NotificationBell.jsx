@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api";
 import { useAuth } from "../context/useAuth";
 import toast from "react-hot-toast";
@@ -15,6 +15,7 @@ const NotificationBell = () => {
   const { isAuthenticated } = useAuth();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
+  const seenNotificationIds = useRef(new Set());
 
   const unreadCount = useMemo(() => items.filter((item) => !item.isRead).length, [items]);
 
@@ -23,7 +24,28 @@ const NotificationBell = () => {
     const fetchNotifications = async () => {
       try {
         const res = await api.getNotifications("limit=20");
-        setItems(res.data || []);
+        const fetched = res.data || [];
+        const previousIds = seenNotificationIds.current;
+
+        if (previousIds.size > 0) {
+          const newNotifications = fetched.filter(
+            (item) => !previousIds.has(item._id)
+          );
+
+          newNotifications.forEach((item) => {
+            const title = item.title?.toLowerCase() || "";
+            if (
+              title.includes("payment approved") ||
+              title.includes("payment rejected") ||
+              title.includes("wallet credited")
+            ) {
+              toast.success(item.message || item.title || "New payment notification");
+            }
+          });
+        }
+
+        setItems(fetched);
+        seenNotificationIds.current = new Set(fetched.map((item) => item._id));
       } catch {
         // silent in navbar
       }

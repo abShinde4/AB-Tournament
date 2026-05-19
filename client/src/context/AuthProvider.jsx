@@ -20,6 +20,15 @@ export const AuthProvider = ({ children }) => {
       .finally(() => setIsLoading(false));
   }, [isLoading]);
 
+  useEffect(() => {
+    if (!user || isLoading) return;
+    const sync = () => {
+      api.me().then((res) => setUser(res.user)).catch(() => {});
+    };
+    const interval = setInterval(sync, 20000);
+    return () => clearInterval(interval);
+  }, [user?._id, isLoading]);
+
   const setSession = ({ token, user: currentUser }) => {
     localStorage.setItem("ab_token", token);
     setUser(currentUser);

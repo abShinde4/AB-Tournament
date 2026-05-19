@@ -14,6 +14,8 @@ const DashboardPage = () => {
   });
   const [transactions, setTransactions] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
+  const [walletRequests, setWalletRequests] = useState([]);
+  const [matchJoinRequests, setMatchJoinRequests] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [showAddMoney, setShowAddMoney] = useState(false);
@@ -21,15 +23,24 @@ const DashboardPage = () => {
   const { setUser } = useAuth();
 
   const loadAll = async () => {
-    const [dashboardRes, txRes, withdrawalsRes] = await Promise.all([
+    const [dashboardRes, txRes, withdrawalsRes, walletRequestsRes, joinRequestsRes, meRes] = await Promise.all([
       api.getDashboard(),
       api.getTransactions("limit=10"),
       api.getWithdrawals("limit=10"),
+      api.getMyWalletPaymentRequests(),
+      api.getMyMatchJoinRequests(),
+      api.refreshMe(),
     ]);
     setData(dashboardRes);
     setTransactions(txRes.data || []);
     setWithdrawals(withdrawalsRes.data || []);
-    setUser((prev) => ({ ...prev, walletBalance: dashboardRes.walletBalance }));
+    setWalletRequests(walletRequestsRes.data || []);
+    setMatchJoinRequests(joinRequestsRes.data || []);
+    setUser((prev) => ({
+      ...prev,
+      walletBalance: meRes.user?.walletBalance ?? dashboardRes.walletBalance,
+      virtualFunds: meRes.user?.virtualFunds ?? dashboardRes.virtualFunds,
+    }));
     setLoading(false);
   };
 
@@ -39,6 +50,10 @@ const DashboardPage = () => {
       setError(err.message);
       setLoading(false);
     });
+    const interval = setInterval(() => {
+      loadAll().catch(() => {});
+    }, 20000);
+    return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setUser]);
 
@@ -76,6 +91,82 @@ const DashboardPage = () => {
         <button className="btn btn-secondary" type="button" onClick={() => setShowWithdraw(true)} style={{ marginLeft: 12 }}>
           Withdraw
         </button>
+      </section>
+
+      <section className="card">
+        <h3>Wallet Recharge Requests</h3>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Amount</th>
+                <th>UTR</th>
+                <th>Status</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              {walletRequests.length === 0 ? (
+                <tr>
+                  <td colSpan="4">No wallet recharge requests yet.</td>
+                </tr>
+              ) : (
+                walletRequests.map((req) => (
+                  <tr key={req._id}>
+                    <td>₹{req.amount}</td>
+                    <td>{req.utr}</td>
+                    <td>
+                      <span className={`status-badge status-${req.status}`}>
+                        {req.status === "approved" ? "Approved" : req.status === "rejected" ? "Rejected" : "Pending"}
+                      </span>
+                    </td>
+                    <td>{new Date(req.createdAt).toLocaleString()}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="card">
+        <h3>Match Join Requests</h3>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Tournament</th>
+                <th>Entry Fee</th>
+                <th>Status</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              {matchJoinRequests.length === 0 ? (
+                <tr>
+                  <td colSpan="4">No match join requests yet.</td>
+                </tr>
+              ) : (
+                matchJoinRequests.map((req) => (
+                  <tr key={req._id}>
+                    <td>{req.match?.title || "—"}</td>
+                    <td>₹{req.entryFee}</td>
+                    <td>
+                      <span className={`status-badge status-${req.status}`}>
+                        {req.status === "approved"
+                          ? "Approved"
+                          : req.status === "rejected"
+                            ? "Rejected"
+                            : "Pending Approval"}
+                      </span>
+                    </td>
+                    <td>{new Date(req.createdAt).toLocaleString()}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section className="card">

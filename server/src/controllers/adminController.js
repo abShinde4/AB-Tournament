@@ -4,6 +4,11 @@ const User = require("../models/User");
 const Result = require("../models/Result");
 const Transaction = require("../models/Transaction");
 const WithdrawRequest = require("../models/WithdrawRequest");
+const {
+  listTournamentPaymentsAdmin,
+  approveTournamentPayment,
+  rejectTournamentPayment,
+} = require("../controllers/paymentController");
 const mongoose = require("mongoose");
 
 const listUsers = async (req, res) => {
@@ -292,6 +297,9 @@ module.exports = {
   listWithdrawRequests,
   approveWithdrawRequest,
   rejectWithdrawRequest,
+  listTournamentPaymentsAdmin,
+  approveTournamentPayment,
+  rejectTournamentPayment,
   publishRoom,
   verifyPlayer,
   markPlayerSuspicious,
