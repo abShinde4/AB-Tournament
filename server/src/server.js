@@ -6,6 +6,7 @@ const User = require("./models/User");
 const { ensureAdminUser } = require("./bootstrap/adminUser");
 const { startRoomVisibilityJob } = require("./jobs/roomVisibilityJob");
 const { initializeEmailService } = require("./utils/emailService");
+const { ensureUploadsDir } = require("./middleware/optionalScreenshotUpload");
 
 dotenv.config({
   path: path.resolve(__dirname, "../.env"),
@@ -69,6 +70,7 @@ const startServer = async () => {
     initializeEmailService();
 
     await connectDb();
+    ensureUploadsDir();
     await resetLegacyWalletBalances();
     await ensureAdminUser();
     startRoomVisibilityJob();

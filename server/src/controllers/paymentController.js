@@ -66,7 +66,7 @@ const submitTournamentPayment = async (req, res) => {
   }
 
   let paymentScreenshot = "";
-  if (req.file) {
+  if (req.file?.filename) {
     paymentScreenshot = `/uploads/${req.file.filename}`;
   }
 
