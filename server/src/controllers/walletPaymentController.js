@@ -21,7 +21,9 @@ const submitWalletPaymentRequest = async (req, res) => {
   if (dupInRequests) return res.status(409).json({ message: "This UTR has already been used. Please check and try again." });
 
   let screenshotPath = "";
-  if (req.file) screenshotPath = `/uploads/${req.file.filename}`;
+  if (req.file?.filename) {
+    screenshotPath = `/uploads/${req.file.filename}`;
+  }
 
   try {
     const pr = await PaymentRequest.create({

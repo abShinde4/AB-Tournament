@@ -53,6 +53,7 @@ const WalletRequestForm = ({ defaultAmount = 100, onSuccess, onClose }) => {
       </div>
       <div className="form-group">
         <label>Payment screenshot (optional)</label>
+        <p className="muted payment-hint">Screenshot optional. UTR is enough for verification.</p>
         <input type="file" accept="image/jpeg,image/png,image/jpg,image/webp" onChange={handleFile} />
       </div>
       <div className="row">
