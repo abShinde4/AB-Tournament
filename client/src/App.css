@@ -736,6 +736,38 @@ td {
   color: #dfe4ff;
   padding: 0.48rem 0.65rem;
   cursor: pointer;
+  transform-origin: top center;
+  transition: box-shadow 0.2s ease;
+}
+
+.notif-btn--ring {
+  animation: notif-bell-ring 0.65s ease-in-out;
+  box-shadow: 0 0 14px rgba(102, 252, 182, 0.45);
+}
+
+@keyframes notif-bell-ring {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  12% {
+    transform: rotate(16deg);
+  }
+  24% {
+    transform: rotate(-14deg);
+  }
+  36% {
+    transform: rotate(10deg);
+  }
+  48% {
+    transform: rotate(-8deg);
+  }
+  60% {
+    transform: rotate(5deg);
+  }
+  72% {
+    transform: rotate(-3deg);
+  }
 }
 
 .notif-dot {
@@ -745,6 +777,22 @@ td {
   border-radius: 999px;
   padding: 0.08rem 0.4rem;
   font-size: 0.75rem;
+}
+
+.notif-dot--pulse {
+  animation: notif-dot-pulse 0.65s ease-in-out;
+}
+
+@keyframes notif-dot-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: none;
+  }
+  40% {
+    transform: scale(1.15);
+    box-shadow: 0 0 10px rgba(102, 252, 182, 0.7);
+  }
 }
 
 .notif-panel {
