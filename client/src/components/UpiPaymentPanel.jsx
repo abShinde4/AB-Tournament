@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import toast from "react-hot-toast";
+import PhonePeLogo from "./PhonePeLogo";
+import PhonePeReceiptPreview from "./PhonePeReceiptPreview";
 import { buildUpiPayUri, isMobileDevice } from "../utils/upi";
 
 const UpiPaymentPanel = ({ upiId, payeeName, amount, note, onPaid }) => {
@@ -70,8 +72,16 @@ const UpiPaymentPanel = ({ upiId, payeeName, amount, note, onPaid }) => {
         <div className="upi-qr-wrap">
           <img src={qrDataUrl} alt={`UPI QR for ${upiId}`} className="upi-qr-image" width={220} height={220} />
           <p className="muted upi-qr-caption">Scan with any UPI app</p>
+          <div className="phonepe-brand-strip">
+            <PhonePeLogo />
+            <span className="phonepe-brand-tagline">Use PhonePe for faster verification</span>
+          </div>
         </div>
       )}
+
+      <PhonePeReceiptPreview amount={amount} />
+
+      <p className="payment-utr-paste-hint">After payment, paste your UTR / Transaction ID below</p>
 
       <button className="btn btn-primary full-width" type="button" onClick={payViaUpi}>
         Pay via UPI

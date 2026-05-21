@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { api } from "../api";
 import { DEFAULT_UPI_ID } from "../utils/upi";
+import PhonePeReceiptPreview from "./PhonePeReceiptPreview";
 import UpiPaymentPanel from "./UpiPaymentPanel";
 import WalletRequestForm from "./WalletRequestForm";
 
@@ -75,7 +76,7 @@ const WalletRechargeModal = ({ isOpen, onClose, suggestedAmount = 100, title = "
               note="Wallet recharge"
               onPaid={() => {
                 setStep("submit");
-                toast("Paste your UTR after successful payment.", { icon: "ℹ️" });
+                toast("After payment, submit your UTR/Transaction ID for admin verification.", { icon: "ℹ️" });
               }}
             />
             <button className="btn btn-secondary full-width" type="button" onClick={() => setStep("submit")}>
@@ -86,7 +87,8 @@ const WalletRechargeModal = ({ isOpen, onClose, suggestedAmount = 100, title = "
 
         {step === "submit" && (
           <>
-            <p className="payment-utr-reminder">Paste your UTR after successful payment.</p>
+            <p className="payment-utr-reminder">After payment, paste your UTR / Transaction ID below</p>
+            <PhonePeReceiptPreview amount={suggestedAmount} compact />
             <WalletRequestForm
               defaultAmount={suggestedAmount}
               onSuccess={async () => {

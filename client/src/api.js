@@ -51,13 +51,11 @@ export const api = {
     request("/wallet/add-money", { method: "POST", body: JSON.stringify(payload) }),
   getPaymentLinks: () => request("/payments/links"),
   // Wallet payment requests (manual UPI top-ups)
-  createWalletPaymentRequest: (payload) => {
-    const form = new FormData();
-    form.append("utr", payload.utr);
-    form.append("amount", payload.amount);
-    if (payload.screenshot) form.append("screenshot", payload.screenshot);
-    return request("/wallet/requests", { method: "POST", body: form });
-  },
+  createWalletPaymentRequest: (payload) =>
+    request("/wallet/requests", {
+      method: "POST",
+      body: JSON.stringify({ utr: payload.utr, amount: payload.amount }),
+    }),
   getMyWalletPaymentRequests: () => request("/wallet/requests/my"),
   submitTournamentPayment: (tournamentId, { utr, screenshot }) => {
     const form = new FormData();

@@ -5,13 +5,7 @@ import { api } from "../api";
 const WalletRequestForm = ({ defaultAmount = 100, onSuccess, onClose }) => {
   const [utr, setUtr] = useState("");
   const [amount, setAmount] = useState(defaultAmount);
-  const [screenshot, setScreenshot] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-
-  const handleFile = (e) => {
-    const f = e.target.files?.[0];
-    setScreenshot(f || null);
-  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -22,11 +16,9 @@ const WalletRequestForm = ({ defaultAmount = 100, onSuccess, onClose }) => {
       await api.createWalletPaymentRequest({
         utr: utr.trim(),
         amount: Number(amount),
-        screenshot,
       });
       toast.success("Payment Submitted");
       setUtr("");
-      setScreenshot(null);
       await onSuccess?.();
       onClose?.();
     } catch (err) {
@@ -49,12 +41,10 @@ const WalletRequestForm = ({ defaultAmount = 100, onSuccess, onClose }) => {
       </div>
       <div className="form-group">
         <label>Enter UTR / Transaction ID</label>
-        <input value={utr} onChange={(e) => setUtr(e.target.value)} placeholder="Enter UTR / Transaction ID" required />
-      </div>
-      <div className="form-group">
-        <label>Payment screenshot (optional)</label>
-        <p className="muted payment-screenshot-hint">Screenshot optional. UTR is enough for verification.</p>
-        <input type="file" accept="image/jpeg,image/png,image/jpg,image/webp" onChange={handleFile} />
+        <input value={utr} onChange={(e) => setUtr(e.target.value)} placeholder="e.g. 012020675896" required />
+        <p className="phonepe-receipt-note phonepe-receipt-note--inline">
+          Use the UTR shown in your PhonePe payment receipt
+        </p>
       </div>
       <div className="row">
         <button className="btn btn-primary" type="submit" disabled={submitting}>

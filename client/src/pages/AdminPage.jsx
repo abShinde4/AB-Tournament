@@ -616,7 +616,6 @@ const AdminPage = () => {
                 <th>User ID</th>
                 <th>Amount</th>
                 <th>UTR</th>
-                <th>Screenshot</th>
                 <th>Balance</th>
                 <th>Time</th>
                 <th>Status</th>
@@ -626,7 +625,7 @@ const AdminPage = () => {
             <tbody>
               {walletPaymentRequests.length === 0 ? (
                 <tr>
-                  <td colSpan="9">No pending wallet recharge requests.</td>
+                  <td colSpan="8">No pending wallet recharge requests.</td>
                 </tr>
               ) : (
                 walletPaymentRequests.map((p) => (
@@ -639,13 +638,6 @@ const AdminPage = () => {
                     <td className="muted">{String(p.user?._id || "").slice(-8)}</td>
                     <td>₹{p.amount}</td>
                     <td>{p.utr}</td>
-                    <td>
-                      {p.screenshot ? (
-                        <a href={`${apiOrigin}${p.screenshot}`} target="_blank" rel="noopener noreferrer">View</a>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
                     <td>₹{p.user?.walletBalance ?? 0}</td>
                     <td>{new Date(p.createdAt).toLocaleString()}</td>
                     <td>

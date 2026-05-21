@@ -6,7 +6,6 @@ const PaymentRequestSchema = new mongoose.Schema(
     username: { type: String },
     amount: { type: Number, required: true, min: 1 },
     utr: { type: String, required: true, trim: true, uppercase: true },
-    screenshot: { type: String },
     status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
     reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     reviewedAt: { type: Date },
@@ -19,9 +18,6 @@ PaymentRequestSchema.index(
   { utr: 1 },
   { unique: true, partialFilterExpression: { status: { $in: ["pending", "approved"] } } }
 );
-PaymentRequestSchema.index(
-  { user: 1 },
-  { unique: true, partialFilterExpression: { status: "pending" } }
-);
+PaymentRequestSchema.index({ user: 1, createdAt: -1 });
 
 module.exports = mongoose.model("PaymentRequest", PaymentRequestSchema);

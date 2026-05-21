@@ -20,18 +20,12 @@ const submitWalletPaymentRequest = async (req, res) => {
   const dupInRequests = await PaymentRequest.findOne({ utr, status: { $in: ["pending", "approved"] } });
   if (dupInRequests) return res.status(409).json({ message: "This UTR has already been used. Please check and try again." });
 
-  let screenshotPath = "";
-  if (req.file?.filename) {
-    screenshotPath = `/uploads/${req.file.filename}`;
-  }
-
   try {
     const pr = await PaymentRequest.create({
       user: req.user._id,
       username: req.user.username,
       amount,
       utr,
-      screenshot: screenshotPath,
       status: "pending",
     });
 

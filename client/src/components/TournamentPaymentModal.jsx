@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { api } from "../api";
 import { DEFAULT_UPI_ID } from "../utils/upi";
+import PhonePeReceiptPreview from "./PhonePeReceiptPreview";
 import UpiPaymentPanel from "./UpiPaymentPanel";
 
 const TournamentPaymentModal = ({ isOpen, onClose, match, onSubmitted }) => {
@@ -126,7 +127,7 @@ const TournamentPaymentModal = ({ isOpen, onClose, match, onSubmitted }) => {
             )}
 
             {showUtrHint && (
-              <p className="payment-utr-reminder">Paste your UTR after successful payment.</p>
+              <p className="payment-utr-reminder">After payment, paste your UTR / Transaction ID below</p>
             )}
 
             <button className="btn btn-secondary full-width" type="button" onClick={goToUtrStep}>
@@ -138,13 +139,17 @@ const TournamentPaymentModal = ({ isOpen, onClose, match, onSubmitted }) => {
         {step === "utr" && (
           <form onSubmit={submitPayment}>
             {showUtrHint && (
-              <p className="payment-utr-reminder">Paste your UTR after successful payment.</p>
+              <p className="payment-utr-reminder">After payment, paste your UTR / Transaction ID below</p>
             )}
+            <PhonePeReceiptPreview amount={entryFee} compact />
             <label htmlFor="utr-input">Enter UTR / Transaction ID</label>
+            <p className="phonepe-receipt-note phonepe-receipt-note--inline">
+              Use the UTR shown in your PhonePe payment receipt
+            </p>
             <input
               id="utr-input"
               type="text"
-              placeholder="e.g. 123456789012"
+              placeholder="e.g. 012020675896"
               value={utr}
               onChange={(e) => setUtr(e.target.value)}
               required

@@ -998,6 +998,226 @@ td {
   font-size: 0.82rem;
 }
 
+.phonepe-brand-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 0.65rem;
+  margin-top: 0.85rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(95, 37, 159, 0.45);
+  background: linear-gradient(135deg, rgba(95, 37, 159, 0.18), rgba(109, 86, 255, 0.1));
+  box-shadow: 0 0 18px rgba(95, 37, 159, 0.15);
+}
+
+.phonepe-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.phonepe-logo-text {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #e8d4ff;
+  letter-spacing: 0.02em;
+}
+
+.phonepe-brand-tagline {
+  font-size: 0.82rem;
+  color: #b8a8e8;
+  text-align: center;
+}
+
+.payment-utr-paste-hint {
+  margin: 0.65rem 0 0.25rem;
+  font-size: 0.88rem;
+  color: #9ec8ff;
+  text-align: center;
+}
+
+.phonepe-receipt-preview {
+  margin: 0.85rem 0 0.35rem;
+}
+
+.phonepe-receipt-preview--compact {
+  margin: 0.5rem 0 0.65rem;
+}
+
+.phonepe-receipt-preview-label {
+  font-size: 0.72rem;
+  color: #7a84b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.4rem;
+}
+
+.phonepe-receipt-card {
+  border-radius: 12px;
+  border: 1px solid #3d3560;
+  background: linear-gradient(180deg, rgba(22, 18, 38, 0.95), rgba(14, 16, 30, 0.98));
+  box-shadow:
+    0 0 0 1px rgba(95, 37, 159, 0.25),
+    0 8px 24px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+  font-size: 0.8rem;
+}
+
+.phonepe-receipt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(95, 37, 159, 0.12);
+}
+
+.phonepe-receipt-title {
+  font-weight: 600;
+  color: #ddd0f5;
+  font-size: 0.82rem;
+}
+
+.phonepe-receipt-chevron {
+  color: #9a8fc4;
+  font-size: 0.75rem;
+}
+
+.phonepe-receipt-success {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.5rem 0.75rem 0;
+  padding: 0.35rem 0.55rem;
+  border-radius: 8px;
+  background: rgba(46, 196, 142, 0.12);
+  border: 1px solid rgba(46, 196, 142, 0.35);
+  color: #7dffc8;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.phonepe-receipt-success-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #2ec48e;
+  box-shadow: 0 0 8px #2ec48e;
+}
+
+.phonepe-receipt-field {
+  padding: 0.45rem 0.75rem 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.phonepe-receipt-field:last-of-type {
+  border-bottom: none;
+}
+
+.phonepe-receipt-field-label {
+  display: block;
+  color: #8a92b8;
+  font-size: 0.7rem;
+  margin-bottom: 0.2rem;
+}
+
+.phonepe-receipt-field-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.35rem;
+}
+
+.phonepe-receipt-field-value {
+  font-size: 0.72rem;
+  color: #c5cbe8;
+  word-break: break-all;
+  line-height: 1.35;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.phonepe-receipt-copy {
+  flex-shrink: 0;
+  color: #a56fe8;
+  margin-top: 0.1rem;
+}
+
+.phonepe-receipt-field--debited .phonepe-receipt-debited-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.phonepe-receipt-bank-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #c62828, #8e0000);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+}
+
+.phonepe-receipt-account {
+  color: #a8b0d6;
+  font-size: 0.78rem;
+  flex: 1;
+}
+
+.phonepe-receipt-amount {
+  color: #f0f2ff;
+  font-size: 0.9rem;
+  margin-left: auto;
+}
+
+.phonepe-receipt-field--utr {
+  background: rgba(95, 37, 159, 0.14);
+  border-top: 1px solid rgba(165, 111, 232, 0.35);
+}
+
+.phonepe-receipt-utr-value {
+  color: #e8d4ff !important;
+  font-weight: 600;
+  text-shadow: 0 0 12px rgba(165, 111, 232, 0.45);
+}
+
+.phonepe-receipt-note {
+  margin: 0.45rem 0 0;
+  font-size: 0.8rem;
+  color: #a56fe8;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.phonepe-receipt-note--inline {
+  margin-top: 0.35rem;
+  text-align: left;
+  font-size: 0.78rem;
+}
+
+.phonepe-receipt-preview--compact .phonepe-receipt-card {
+  font-size: 0.75rem;
+}
+
+.phonepe-receipt-preview--compact .phonepe-receipt-field-value {
+  font-size: 0.68rem;
+}
+
+@media (max-width: 400px) {
+  .phonepe-brand-strip {
+    flex-direction: column;
+  }
+
+  .phonepe-receipt-field-value {
+    font-size: 0.65rem;
+  }
+}
+
 .payment-alt-links {
   margin-top: 1rem;
   padding-top: 0.75rem;
