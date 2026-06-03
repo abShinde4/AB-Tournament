@@ -1,32 +1,75 @@
 const { Resend } = require("resend");
+const nodemailer = require("nodemailer");
 
 // Email service for sending verification emails and notifications
 let transporter = null;
-const senderEmail = "onboarding@resend.dev";
+let emailProvider = null; // "resend" | "gmail" | null
+let senderEmail = null;
 
 const initializeEmailService = () => {
   const resendApiKey = process.env.RESEND_API_KEY;
+  const emailUser = process.env.EMAIL_USER;
+  const emailPass = process.env.EMAIL_PASS;
 
-  if (!resendApiKey) {
-    console.warn(
-      "⚠️  Email disabled - missing RESEND_API_KEY. Set RESEND_API_KEY to use the Resend email service."
-    );
-    transporter = null;
-    return;
+  // Priority 1: Try Resend API
+  if (resendApiKey) {
+    try {
+      transporter = new Resend(resendApiKey);
+      emailProvider = "resend";
+      senderEmail = "onboarding@resend.dev";
+      console.log("✓ Email service initialized: Resend API");
+      return;
+    } catch (error) {
+      console.error("✗ Resend initialization failed:", error.message);
+      // Fall through to Gmail SMTP
+    }
   }
 
-  try {
-    transporter = new Resend(resendApiKey);
-    console.log("✓ Email service configured");
-  } catch (error) {
-    console.error("✗ Email initialization failed:", error);
-    transporter = null;
+  // Priority 2: Try Nodemailer with Gmail SMTP
+  if (emailUser && emailPass) {
+    try {
+      // Validate Gmail App Password (should be 16 characters without spaces)
+      const cleanPass = emailPass.replace(/\s+/g, "");
+      if (cleanPass.length !== 16) {
+        console.warn(
+          "⚠️  EMAIL_PASS does not appear to be a valid Gmail App Password (should be 16 characters). " +
+          "Email service will not be available."
+        );
+        transporter = null;
+        emailProvider = null;
+        return;
+      }
+
+      transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: emailUser,
+          pass: cleanPass,
+        },
+      });
+
+      emailProvider = "gmail";
+      senderEmail = emailUser;
+      console.log(`✓ Email service initialized: Gmail SMTP (${emailUser})`);
+      return;
+    } catch (error) {
+      console.error("✗ Gmail SMTP initialization failed:", error.message);
+    }
   }
+
+  // No email provider configured
+  console.warn(
+    "⚠️  Email service disabled - no email provider configured.\n" +
+    "   Option 1: Set RESEND_API_KEY for Resend API\n" +
+    "   Option 2: Set EMAIL_USER and EMAIL_PASS for Gmail SMTP (16-char app password)"
+  );
+  transporter = null;
+  emailProvider = null;
 };
 
 const sendVerificationEmail = async (email, verificationToken) => {
   if (!transporter) {
-    console.warn(`⚠️  Email not sent to ${email} - service not configured`);
+    console.warn(`⚠️  Email not sent to ${email} - email service not configured`);
     return { sent: false, reason: "Email service not configured" };
   }
 
@@ -55,9 +98,16 @@ const sendVerificationEmail = async (email, verificationToken) => {
   };
 
   try {
-    const result = await transporter.emails.send(mailOptions);
-    console.log(`✓ Verification email sent to ${email}`);
-    return { sent: true, messageId: result.id };
+    let result;
+    if (emailProvider === "resend") {
+      result = await transporter.emails.send(mailOptions);
+      console.log(`✓ Verification email sent to ${email} (via Resend)`);
+      return { sent: true, messageId: result.id };
+    } else if (emailProvider === "gmail") {
+      result = await transporter.sendMail(mailOptions);
+      console.log(`✓ Verification email sent to ${email} (via Gmail SMTP)`);
+      return { sent: true, messageId: result.messageId };
+    }
   } catch (error) {
     console.error(`✗ Failed to send verification email to ${email}:`, error.message);
     return { sent: false, reason: error.message };
@@ -66,7 +116,7 @@ const sendVerificationEmail = async (email, verificationToken) => {
 
 const sendPasswordResetEmail = async (email, resetToken) => {
   if (!transporter) {
-    console.warn(`⚠️  Email not sent to ${email} - service not configured`);
+    console.warn(`⚠️  Email not sent to ${email} - email service not configured`);
     return { sent: false, reason: "Email service not configured" };
   }
 
@@ -92,9 +142,16 @@ const sendPasswordResetEmail = async (email, resetToken) => {
   };
 
   try {
-    const result = await transporter.emails.send(mailOptions);
-    console.log(`✓ Password reset email sent to ${email}`);
-    return { sent: true, messageId: result.id };
+    let result;
+    if (emailProvider === "resend") {
+      result = await transporter.emails.send(mailOptions);
+      console.log(`✓ Password reset email sent to ${email} (via Resend)`);
+      return { sent: true, messageId: result.id };
+    } else if (emailProvider === "gmail") {
+      result = await transporter.sendMail(mailOptions);
+      console.log(`✓ Password reset email sent to ${email} (via Gmail SMTP)`);
+      return { sent: true, messageId: result.messageId };
+    }
   } catch (error) {
     console.error(`✗ Failed to send password reset email to ${email}:`, error.message);
     return { sent: false, reason: error.message };
@@ -103,7 +160,7 @@ const sendPasswordResetEmail = async (email, resetToken) => {
 
 const sendOtpEmail = async (email, otp) => {
   if (!transporter) {
-    console.warn(`⚠️  Email not sent to ${email} - service not configured`);
+    console.warn(`⚠️  Email not sent to ${email} - email service not configured`);
     return { sent: false, reason: "Email service not configured" };
   }
 
@@ -132,9 +189,16 @@ const sendOtpEmail = async (email, otp) => {
   };
 
   try {
-    const result = await transporter.emails.send(mailOptions);
-    console.log(`✓ OTP email sent to ${email}`);
-    return { sent: true, messageId: result.id };
+    let result;
+    if (emailProvider === "resend") {
+      result = await transporter.emails.send(mailOptions);
+      console.log(`✓ OTP email sent to ${email} (via Resend)`);
+      return { sent: true, messageId: result.id };
+    } else if (emailProvider === "gmail") {
+      result = await transporter.sendMail(mailOptions);
+      console.log(`✓ OTP email sent to ${email} (via Gmail SMTP)`);
+      return { sent: true, messageId: result.messageId };
+    }
   } catch (error) {
     console.error(`✗ Failed to send OTP email to ${email}:`, error.message);
     return { sent: false, reason: error.message };
