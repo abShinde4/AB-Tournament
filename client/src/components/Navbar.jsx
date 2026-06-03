@@ -2,6 +2,25 @@ import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import NotificationBell from "./NotificationBell";
+import {
+  Home,
+  Trophy,
+  Award,
+  TrendingUp,
+  LayoutDashboard,
+  User,
+  ShieldCheck,
+} from "lucide-react";
+
+const menuItems = [
+  { to: "/", label: "Home", Icon: Home },
+  { to: "/tournaments", label: "Tournaments", Icon: Trophy },
+  { to: "/results", label: "Results", Icon: Award },
+  { to: "/leaderboard", label: "Leaderboard", Icon: TrendingUp },
+  { to: "/dashboard", label: "Dashboard", Icon: LayoutDashboard, auth: true },
+  { to: "/profile", label: "Profile", Icon: User, auth: true },
+  { to: "/admin", label: "Admin", Icon: ShieldCheck, role: "admin" },
+];
 
 const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -9,44 +28,52 @@ const Navbar = () => {
 
   const closeMobileMenu = () => setMenuOpen(false);
 
+  const visibleMenuItems = menuItems.filter((item) => {
+    if (item.role === "admin") return isAuthenticated && user?.role === "admin";
+    if (item.auth) return isAuthenticated;
+    return true;
+  });
+
   return (
     <header className={`navbar ${menuOpen ? "open" : ""}`}>
-      <Link to="/" className="brand flex items-center gap-2" onClick={closeMobileMenu}>
-        <img
-            src="/favicon.png"
-             alt="AB Tournament"
-              style={{ width: "75px", height: "60px", borderRadius: "10px" }}
-        /> 
-      <span>AB Tournament</span>
-      </Link>
-      <button
-        type="button"
-        className="nav-toggle"
-        aria-expanded={menuOpen}
-        aria-label="Toggle navigation"
-        onClick={() => setMenuOpen((open) => !open)}
-      >
-        <span />
-        <span />
-        <span />
-      </button>
-      <nav>
-        <NavLink to="/" onClick={closeMobileMenu}>Home</NavLink>
-        <NavLink to="/tournaments" onClick={closeMobileMenu}>Tournaments</NavLink>
-        <NavLink to="/results" onClick={closeMobileMenu}>Results</NavLink>
-        <NavLink to="/leaderboard" onClick={closeMobileMenu}>Leaderboard</NavLink>
-        {isAuthenticated && <NavLink to="/dashboard" onClick={closeMobileMenu}>Dashboard</NavLink>}
-        {isAuthenticated && <NavLink to="/profile" onClick={closeMobileMenu}>Profile</NavLink>}
-        {isAuthenticated && user?.role === "admin" && <NavLink to="/admin" onClick={closeMobileMenu}>Admin</NavLink>}
+      <div className="navbar-brand-row">
+        <Link to="/" className="brand" onClick={closeMobileMenu}>
+          <img src="/favicon.png" alt="AB Tournament" className="brand-logo" />
+          <div className="brand-copy">
+            <span>AB Tournament</span>
+            <small>Esports arena</small>
+          </div>
+        </Link>
+        <button
+          type="button"
+          className={`nav-toggle ${menuOpen ? "active" : ""}`}
+          aria-expanded={menuOpen}
+          aria-label="Toggle navigation"
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          <span className="line line-1" />
+          <span className="line line-2" />
+          <span className="line line-3" />
+        </button>
+      </div>
+
+      <nav className="desktop-nav">
+        {visibleMenuItems.map(({ to, label, Icon }) => (
+          <NavLink key={to} to={to} onClick={closeMobileMenu} className="nav-link">
+            <Icon className="nav-icon" />
+            {label}
+          </NavLink>
+        ))}
       </nav>
-      <div className="actions">
+
+      <div className="desktop-actions">
         {isAuthenticated ? (
           <>
             <NotificationBell />
             <span className="chip">{user?.username}</span>
             <span className="chip wallet-chip">₹{user?.walletBalance ?? 0}</span>
             <button
-              className="btn btn-secondary"
+              className="btn btn-secondary logout-btn"
               onClick={() => {
                 logout();
                 closeMobileMenu();
@@ -62,6 +89,63 @@ const Navbar = () => {
           </Link>
         )}
       </div>
+
+      <div className={`mobile-backdrop ${menuOpen ? "visible" : ""}`} onClick={closeMobileMenu} />
+
+      <aside className={`mobile-sidebar ${menuOpen ? "open" : ""}`}>
+        <div className="mobile-sidebar-inner">
+          <div className="mobile-profile">
+            <div className="mobile-avatar-shell">
+              <img src="/favicon.png" alt="Profile avatar" />
+            </div>
+            <div className="mobile-profile-copy">
+              <span>Welcome back</span>
+              <h3>{isAuthenticated ? user?.username ?? "Champion" : "AB Challenger"}</h3>
+              <p>{isAuthenticated ? "Step into the arena" : "Login to unlock rewards"}</p>
+            </div>
+          </div>
+
+          <div className="sidebar-links">
+            {visibleMenuItems.map(({ to, label, Icon }) => (
+              <NavLink
+                key={to}
+                to={to}
+                onClick={closeMobileMenu}
+                className={({ isActive }) => `menu-item ${isActive ? "active" : ""}`}
+              >
+                <Icon className="menu-icon" />
+                <span>{label}</span>
+              </NavLink>
+            ))}
+          </div>
+
+          <div className="sidebar-actions">
+            {isAuthenticated ? (
+              <>
+                <NotificationBell />
+                <div className="mobile-chips">
+                  <span className="chip">{user?.username}</span>
+                  <span className="chip wallet-chip">₹{user?.walletBalance ?? 0}</span>
+                </div>
+                <button
+                  className="btn btn-secondary mobile-logout"
+                  onClick={() => {
+                    logout();
+                    closeMobileMenu();
+                  }}
+                  type="button"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <Link to="/auth" className="btn btn-primary mobile-login" onClick={closeMobileMenu}>
+                Login
+              </Link>
+            )}
+          </div>
+        </div>
+      </aside>
     </header>
   );
 };
