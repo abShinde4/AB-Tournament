@@ -6,6 +6,7 @@ import {
   Home,
   Trophy,
   Award,
+  BarChart,
   TrendingUp,
   LayoutDashboard,
   User,
@@ -34,8 +35,17 @@ const Navbar = () => {
     return true;
   });
 
+  const bottomNavItems = [
+    { to: "/", label: "Home", Icon: Home },
+    { to: "/tournaments", label: "Tournaments", Icon: Trophy },
+    { to: "/results", label: "Results", Icon: Award },
+    { to: "/leaderboard", label: "Leaderboard", Icon: BarChart },
+    { to: "/profile", label: "Profile", Icon: User },
+  ];
+
   return (
-    <header className={`navbar ${menuOpen ? "open" : ""}`}>
+    <>
+      <header className={`navbar ${menuOpen ? "open" : ""}`}>
       <div className="navbar-brand-row">
         <Link to="/" className="brand" onClick={closeMobileMenu}>
           <img src="/favicon.png" alt="AB Tournament" className="brand-logo" />
@@ -46,7 +56,7 @@ const Navbar = () => {
         </Link>
         <button
           type="button"
-          className={`nav-toggle ${menuOpen ? "active" : ""}`}
+          className={`nav-toggle flex md:hidden ${menuOpen ? "active" : ""}`}
           aria-expanded={menuOpen}
           aria-label="Toggle navigation"
           onClick={() => setMenuOpen((open) => !open)}
@@ -57,7 +67,7 @@ const Navbar = () => {
         </button>
       </div>
 
-      <nav className="desktop-nav">
+      <nav className="desktop-nav hidden md:flex">
         {visibleMenuItems.map(({ to, label, Icon }) => (
           <NavLink key={to} to={to} onClick={closeMobileMenu} className="nav-link">
             <Icon className="nav-icon" />
@@ -66,7 +76,7 @@ const Navbar = () => {
         ))}
       </nav>
 
-      <div className="desktop-actions">
+      <div className="desktop-actions hidden md:flex">
         {isAuthenticated ? (
           <>
             <NotificationBell />
@@ -147,6 +157,22 @@ const Navbar = () => {
         </div>
       </aside>
     </header>
+
+      <nav className="bottom-nav md:hidden">
+        {bottomNavItems.map(({ to, label, Icon }) => (
+          <NavLink
+            key={to}
+            to={to}
+            className={({ isActive }) =>
+              `bottom-nav-item ${isActive ? "active" : ""}`
+            }
+          >
+            <Icon className="bottom-nav-icon" />
+            <span className="bottom-nav-label">{label}</span>
+          </NavLink>
+        ))}
+      </nav>
+    </>
   );
 };
 
