@@ -2,19 +2,27 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import toast from "react-hot-toast";
 import Skeleton from "../components/Skeleton";
+import WinnerHighlightCard from "../components/WinnerHighlightCard";
+import HighlightModal from "../components/HighlightModal";
 
 const ResultPage = () => {
   const [results, setResults] = useState([]);
+  const [highlights, setHighlights] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [selectedHighlight, setSelectedHighlight] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-    api
-      .getResults("limit=50")
-      .then((res) => {
-        setResults(res.data || []);
-        if ((res.data || []).length > 0) {
-          toast.success("Result published");
+    Promise.all([
+      api.getResults("limit=50"),
+      api.getHighlights("limit=50"),
+    ])
+      .then(([resultsRes, highlightsRes]) => {
+        setResults(resultsRes.data || []);
+        setHighlights(highlightsRes.data || []);
+        if ((resultsRes.data || []).length > 0) {
+          toast.success("Results loaded");
         }
       })
       .catch((err) => setError(err.message))
@@ -33,11 +41,34 @@ const ResultPage = () => {
     return [...map.values()];
   }, [results]);
 
+  const handleHighlightClick = (highlight) => {
+    setSelectedHighlight(highlight);
+    setShowModal(true);
+  };
+
   return (
     <main className="page">
       <h2>Results</h2>
       {error && <p className="state-text">{error}</p>}
       {loading && <Skeleton height={220} />}
+      
+      {/* Winner Highlights Section */}
+      {highlights.length > 0 && (
+        <section className="card">
+          <h3>🏆 Winner Highlights</h3>
+          <div className="highlights-grid">
+            {highlights.map((highlight) => (
+              <WinnerHighlightCard
+                key={highlight._id}
+                highlight={highlight}
+                onCardClick={() => handleHighlightClick(highlight)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Results Table Section */}
       {groupedResults.map((group) => (
         <section className="card" key={group.match?._id || "unknown"}>
           <h3>{group.match?.title || "Match"}</h3>
@@ -68,12 +99,20 @@ const ResultPage = () => {
           </div>
         </section>
       ))}
+      
       {!loading && groupedResults.length === 0 && (
         <section className="card">
           <h3>No results published yet</h3>
           <p>Match results will be shown here after admins publish them.</p>
         </section>
       )}
+
+      {/* Highlight Modal */}
+      <HighlightModal 
+        isOpen={showModal} 
+        highlight={selectedHighlight}
+        onClose={() => setShowModal(false)}
+      />
     </main>
   );
 };

@@ -1,0 +1,248 @@
+.highlight-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.highlight-modal {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 1px solid #ff6b35;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 0 30px rgba(255, 107, 53, 0.4), 0 0 60px rgba(255, 107, 53, 0.2);
+  animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.highlight-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(255, 107, 53, 0.2);
+  border: none;
+  color: #ff6b35;
+  font-size: 24px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.highlight-modal-close:hover {
+  background: rgba(255, 107, 53, 0.4);
+  transform: scale(1.1);
+}
+
+.highlight-modal-header {
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid rgba(255, 107, 53, 0.3);
+}
+
+.highlight-modal-header h2 {
+  margin: 0;
+  color: #ff6b35;
+  font-size: 24px;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+}
+
+.highlight-modal-team {
+  margin: 8px 0 0 0;
+  color: #c0c0c0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.highlight-modal-content {
+  padding: 20px 24px;
+}
+
+.highlight-modal-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.highlight-tab {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid rgba(255, 107, 53, 0.3);
+  color: #c0c0c0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.highlight-tab:hover {
+  border-color: #ff6b35;
+  color: #ff6b35;
+  background: rgba(255, 107, 53, 0.1);
+}
+
+.highlight-tab.active {
+  background: #ff6b35;
+  color: #1a1a2e;
+  border-color: #ff6b35;
+}
+
+.highlight-modal-viewer {
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.highlight-modal-viewer iframe {
+  border-radius: 6px;
+  border: 1px solid rgba(255, 107, 53, 0.2);
+}
+
+.highlight-link-button {
+  display: inline-block;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #ff6b35 0%, #ff4757 100%);
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: 700;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
+}
+
+.highlight-link-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.6);
+}
+
+.highlight-modal-info {
+  background: rgba(255, 107, 53, 0.05);
+  border: 1px solid rgba(255, 107, 53, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.highlight-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.highlight-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.highlight-info-label {
+  color: #ff6b35;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.highlight-info-value {
+  color: #e0e0e0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* Scrollbar styling */
+.highlight-modal::-webkit-scrollbar {
+  width: 6px;
+}
+
+.highlight-modal::-webkit-scrollbar-track {
+  background: rgba(255, 107, 53, 0.1);
+  border-radius: 3px;
+}
+
+.highlight-modal::-webkit-scrollbar-thumb {
+  background: rgba(255, 107, 53, 0.5);
+  border-radius: 3px;
+}
+
+.highlight-modal::-webkit-scrollbar-thumb:hover {
+  background: #ff6b35;
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+  .highlight-modal {
+    width: 95%;
+    max-height: 95vh;
+  }
+
+  .highlight-modal-header {
+    padding: 16px 16px 12px;
+  }
+
+  .highlight-modal-header h2 {
+    font-size: 18px;
+  }
+
+  .highlight-modal-content {
+    padding: 16px;
+  }
+
+  .highlight-modal-viewer {
+    min-height: 250px;
+  }
+
+  .highlight-modal-viewer iframe {
+    width: 100% !important;
+    height: 300px !important;
+  }
+
+  .highlight-info-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .highlight-tab {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+}

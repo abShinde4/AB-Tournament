@@ -1,0 +1,259 @@
+.winner-highlight-card {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 1px solid #ff6b35;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.2);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  cursor: pointer;
+}
+
+.winner-highlight-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 8px 30px rgba(255, 107, 53, 0.5);
+  border-color: #ff4757;
+}
+
+/* Thumbnail Section */
+.highlight-card-thumbnail {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%; /* 16:9 aspect ratio */
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.highlight-card-thumbnail img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.winner-highlight-card:hover .highlight-card-thumbnail img {
+  transform: scale(1.05);
+}
+
+.highlight-card-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.1), rgba(255, 71, 87, 0.1));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placeholder-icon {
+  font-size: 48px;
+  opacity: 0.6;
+}
+
+/* Overlay */
+.highlight-card-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.winner-highlight-card:hover .highlight-card-overlay {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.highlight-card-play-button {
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 107, 53, 0.9);
+  border: none;
+  border-radius: 50%;
+  font-size: 28px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: scale(0.7);
+  opacity: 0;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 20px rgba(255, 107, 53, 0.5);
+}
+
+.winner-highlight-card:hover .highlight-card-play-button {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.highlight-card-play-button:hover {
+  background: #ff4757;
+  transform: scale(1.1);
+}
+
+/* Badge */
+.highlight-card-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: linear-gradient(135deg, #ff6b35 0%, #ff4757 100%);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 10px rgba(255, 107, 53, 0.5);
+}
+
+/* Card Body */
+.highlight-card-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.highlight-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-bottom: 1px solid rgba(255, 107, 53, 0.2);
+  padding-bottom: 10px;
+}
+
+.highlight-card-winner {
+  margin: 0;
+  color: #ff6b35;
+  font-size: 18px;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(255, 107, 53, 0.3);
+}
+
+.highlight-card-team {
+  margin: 0;
+  color: #b0b0b0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Details */
+.highlight-card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.highlight-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+.highlight-detail-label {
+  color: #888;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.highlight-detail-value {
+  color: #e0e0e0;
+  font-weight: 700;
+}
+
+/* Video Indicators */
+.highlight-card-indicators {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.highlight-indicator {
+  padding: 4px 8px;
+  background: rgba(255, 107, 53, 0.2);
+  border: 1px solid rgba(255, 107, 53, 0.4);
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.highlight-indicator:hover {
+  background: rgba(255, 107, 53, 0.4);
+  border-color: #ff6b35;
+}
+
+/* Watch Button */
+.highlight-card-button {
+  margin-top: auto;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #ff6b35 0%, #ff4757 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.highlight-card-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 107, 53, 0.5);
+}
+
+.highlight-card-button:active {
+  transform: translateY(0);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .winner-highlight-card {
+    border-radius: 8px;
+  }
+
+  .highlight-card-body {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .highlight-card-winner {
+    font-size: 16px;
+  }
+
+  .highlight-card-team {
+    font-size: 12px;
+  }
+
+  .highlight-detail-row {
+    font-size: 12px;
+  }
+
+  .highlight-card-button {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .highlight-card-play-button {
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+  }
+}

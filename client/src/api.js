@@ -123,5 +123,17 @@ export const api = {
     request("/results", { method: "POST", body: JSON.stringify(payload) }),
   publishAdminResults: (payload) =>
     request("/admin/publish-results", { method: "POST", body: JSON.stringify(payload) }),
+  // Winner Highlights
+  getHighlights: (params = "") =>
+    request(`/highlights${params ? `?${params}` : ""}`),
+  getMatchHighlights: (matchId, params = "") =>
+    request(`/highlights/match/${matchId}${params ? `?${params}` : ""}`),
+  getUserHighlights: (userId, params = "") =>
+    request(`/highlights/user/${userId}${params ? `?${params}` : ""}`),
+  getHighlight: (highlightId) => request(`/highlights/${highlightId}`),
+  createUpdateHighlight: (payload) =>
+    request("/highlights", { method: "POST", body: JSON.stringify(payload) }),
+  deleteHighlight: (highlightId) =>
+    request(`/highlights/${highlightId}`, { method: "DELETE" }),
 };
 

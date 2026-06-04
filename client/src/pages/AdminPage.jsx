@@ -4,6 +4,7 @@ import { api } from "../api";
 import { useAuth } from "../context/useAuth";
 import AdminResultTable from "../components/AdminResultTable";
 import AdminRoomPublisher from "../components/AdminRoomPublisher";
+import HighlightForm from "../components/HighlightForm";
 
 const initialMatch = {
   title: "",
@@ -41,11 +42,15 @@ const AdminPage = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [searchingUsers, setSearchingUsers] = useState(false);
+  const [results, setResults] = useState([]);
+  const [highlights, setHighlights] = useState([]);
+  const [highlightLoading, setHighlightLoading] = useState(false);
+  const [showHighlightForm, setShowHighlightForm] = useState(false);
 
   const canAccess = user?.role === "admin";
 
   const load = async () => {
-    const [statsRes, matchesRes, usersRes, regRes, walletRes, withdrawRes, paymentRes, walletPaymentRes, matchJoinRes] =
+    const [statsRes, matchesRes, usersRes, regRes, walletRes, withdrawRes, paymentRes, walletPaymentRes, matchJoinRes, resultsRes, highlightsRes] =
       await Promise.all([
       api.getAdminStats(),
       api.getMatches("limit=30"),
@@ -56,6 +61,8 @@ const AdminPage = () => {
       api.getAdminPaymentRequests("limit=50&status=pending"),
       api.getAdminWalletPaymentRequests("limit=50&status=pending"),
       api.getAdminMatchJoinRequests("limit=50&status=pending"),
+      api.getResults("limit=100"),
+      api.getHighlights("limit=20"),
     ]);
     // eslint-disable-next-line no-console
     console.log("Admin stats received:", statsRes);
@@ -77,6 +84,8 @@ const AdminPage = () => {
     setPaymentRequests(paymentRes.data || []);
     setWalletPaymentRequests(walletPaymentRes.data || []);
     setMatchJoinRequests(matchJoinRes.data || []);
+    setResults(resultsRes.data || []);
+    setHighlights(highlightsRes.data || []);
   };
 
   useEffect(() => {
@@ -330,6 +339,48 @@ const AdminPage = () => {
     }
   };
 
+  const handleCreateHighlight = async (formData) => {
+    setHighlightLoading(true);
+    try {
+      const payload = {
+        resultId: formData.resultId || undefined,
+        matchId: formData.matchId || undefined,
+        userId: formData.userId || undefined,
+        winnerName: formData.winnerName?.trim() || undefined,
+        teamName: formData.teamName?.trim() || undefined,
+        prizeAmount:
+          formData.prizeAmount === "" || formData.prizeAmount === null
+            ? undefined
+            : Number(formData.prizeAmount),
+        matchType: formData.matchType?.trim() || undefined,
+        map: formData.map?.trim() || undefined,
+        youtubeUrl: formData.youtubeUrl?.trim() || undefined,
+        instagramUrl: formData.instagramUrl?.trim() || undefined,
+        thumbnailUrl: formData.thumbnailUrl?.trim() || undefined,
+        description: formData.description?.trim() || undefined,
+      };
+      await api.createUpdateHighlight(payload);
+      toast.success("Winner highlight added successfully!");
+      setShowHighlightForm(false);
+      load();
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setHighlightLoading(false);
+    }
+  };
+
+  const handleDeleteHighlight = async (highlightId) => {
+    if (!window.confirm("Are you sure you want to delete this highlight?")) return;
+    try {
+      await api.deleteHighlight(highlightId);
+      toast.success("Highlight deleted successfully");
+      load();
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
   if (!canAccess) {
     return (
       <main className="page">
@@ -534,6 +585,71 @@ const AdminPage = () => {
         </select>
         <p className="muted">Rank is auto-calculated from score, then kills (descending).</p>
         <AdminResultTable onPublish={publishResult} loading={publishing} />
+      </section>
+
+      <section className="card">
+        <h3>Winner Highlights</h3>
+        <button 
+          className="btn btn-primary" 
+          type="button"
+          onClick={() => setShowHighlightForm(!showHighlightForm)}
+          style={{ marginBottom: "16px" }}
+        >
+          {showHighlightForm ? "Cancel" : "➕ Add Winner Highlight"}
+        </button>
+
+        {showHighlightForm && (
+          <HighlightForm 
+            results={results}
+            onSubmit={handleCreateHighlight}
+            isLoading={highlightLoading}
+            onCancel={() => setShowHighlightForm(false)}
+          />
+        )}
+
+        <div style={{ marginTop: "20px" }}>
+          <h4>Existing Highlights</h4>
+          {highlights.length === 0 ? (
+            <p className="state-text">No highlights added yet.</p>
+          ) : (
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Winner</th>
+                    <th>Team</th>
+                    <th>Prize</th>
+                    <th>Match</th>
+                    <th>YouTube</th>
+                    <th>Instagram</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {highlights.map((h) => (
+                    <tr key={h._id}>
+                      <td>{h.winnerName}</td>
+                      <td>{h.teamName}</td>
+                      <td>₹{h.prizeAmount}</td>
+                      <td>{h.match?.title || "—"}</td>
+                      <td>{h.youtubeUrl ? "✓" : "—"}</td>
+                      <td>{h.instagramUrl ? "✓" : "—"}</td>
+                      <td>
+                        <button 
+                          className="btn btn-secondary"
+                          type="button"
+                          onClick={() => handleDeleteHighlight(h._id)}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </section>
 
       <section className="grid two-col">

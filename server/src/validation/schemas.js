@@ -4,6 +4,16 @@ const objectId = z.string().regex(/^[a-fA-F0-9]{24}$/, "Invalid ID");
 
 const upiIdRegex = /^[a-zA-Z0-9._-]{2,64}@[a-zA-Z0-9._-]{2,64}$/;
 
+const youtubeUrlRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|m\.youtube\.com|youtu\.be)\/(watch\?v=[\w-]{11}|shorts\/[\w-]{11}|embed\/[\w-]{11}|[\w-]{11})(\S*)?$/i;
+const instagramReelUrlRegex = /^(https?:\/\/)?(www\.)?instagram\.com\/reel\/[A-Za-z0-9_-]+\/?(\S*)?$/i;
+
+const nonEmptyUrl = z.preprocess((value) => {
+  if (typeof value === "string" && value.trim() === "") {
+    return undefined;
+  }
+  return value;
+}, z.string().trim().url());
+
 const registerSchema = z.object({
   body: z.object({
     username: z.string().trim().min(3).max(24),
@@ -197,6 +207,66 @@ const verifyPlayerSchema = z.object({
   query: z.object({}).optional(),
 });
 
+const createUpdateHighlightSchema = z
+  .object({
+    body: z.object({
+      resultId: objectId.optional(),
+      matchId: objectId.optional(),
+      userId: objectId.optional(),
+      winnerName: z.string().trim().max(100).optional(),
+      teamName: z.string().trim().max(100).optional(),
+      prizeAmount: z.number().min(0).max(500000).optional(),
+      matchType: z.string().trim().max(50).optional(),
+      map: z.string().trim().max(50).optional(),
+      youtubeUrl: z
+        .preprocess((value) => {
+          if (typeof value === "string" && value.trim() === "") return undefined;
+          return value;
+        }, z.string().trim().url().regex(youtubeUrlRegex, "Invalid YouTube URL"))
+        .optional(),
+      instagramUrl: z
+        .preprocess((value) => {
+          if (typeof value === "string" && value.trim() === "") return undefined;
+          return value;
+        }, z.string().trim().url().regex(instagramReelUrlRegex, "Invalid Instagram Reel URL"))
+        .optional(),
+      thumbnailUrl: z
+        .preprocess((value) => {
+          if (typeof value === "string" && value.trim() === "") return undefined;
+          return value;
+        }, z.string().trim().url())
+        .optional(),
+      description: z.string().trim().max(500).optional(),
+    }),
+    params: z.object({}).optional(),
+    query: z.object({}).optional(),
+  })
+  .refine(
+    (data) => data.body.resultId || data.body.winnerName?.trim(),
+    {
+      message: "Select a winner or enter a winner name.",
+      path: ["body", "winnerName"],
+    }
+  );
+
+const highlightIdParamSchema = z.object({
+  body: z.object({}).optional(),
+  params: z.object({ highlightId: objectId }),
+  query: z.object({}).optional(),
+});
+
+const matchIdParamSchema = z.object({
+  body: z.object({}).optional(),
+  params: z.object({ matchId: objectId }),
+  query: z.object({}).optional(),
+});
+
+const userIdParamSchema = z.object({
+  body: z.object({}).optional(),
+  params: z.object({ userId: objectId }),
+  query: z.object({}).optional(),
+});
+
 module.exports = {
   registerSchema,
   loginSchema,
@@ -215,4 +285,8 @@ module.exports = {
   publishRoomSchema,
   verifyPlayerSchema,
   sendNotificationSchema,
+  createUpdateHighlightSchema,
+  highlightIdParamSchema,
+  matchIdParamSchema,
+  userIdParamSchema,
 };

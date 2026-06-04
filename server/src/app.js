@@ -15,6 +15,7 @@ const leaderboardRoutes = require("./routes/leaderboardRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const userRoutes = require("./routes/userRoutes");
+const highlightRoutes = require("./routes/highlightRoutes");
 const Notification = require("./models/Notification");
 
 const app = express();
@@ -64,6 +65,7 @@ app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api/highlights", highlightRoutes);
 
 const ensureSampleNotifications = async () => {
   try {
