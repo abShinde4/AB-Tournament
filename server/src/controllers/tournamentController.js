@@ -67,6 +67,9 @@ const defaultMatches = () => [
     prizePool: 200,
     startTime: new Date(Date.now() + 1000 * 60 * 60 * 3),
     status: "Upcoming",
+    matchType: "Solo",
+    map: "Random",
+    perspective: "TPP",
     maxPlayers: 100,
     joinedPlayersCount: 0,
   },
@@ -77,6 +80,9 @@ const defaultMatches = () => [
     prizePool: 500,
     startTime: new Date(Date.now() + 1000 * 60 * 60 * 7),
     status: "Upcoming",
+    matchType: "Squad",
+    map: "Erangel",
+    perspective: "FPP",
     maxPlayers: 100,
     joinedPlayersCount: 0,
   },
@@ -171,8 +177,20 @@ const listMatches = async (req, res) => {
 };
 
 const createMatch = async (req, res) => {
-  const { title, game, entryFee, prizePool, startTime, status, maxPlayers, roomId, roomPassword } =
-    req.validated.body;
+  const {
+    title,
+    game,
+    entryFee,
+    prizePool,
+    startTime,
+    status,
+    maxPlayers,
+    roomId,
+    roomPassword,
+    matchType,
+    map,
+    perspective,
+  } = req.validated.body;
   const startDate = new Date(startTime);
   const roomReady = Boolean(roomId && roomPassword);
   const shouldBeVisible = roomReady && startDate.getTime() - Date.now() <= roomUnlockMs;
@@ -184,6 +202,9 @@ const createMatch = async (req, res) => {
     prizePool,
     startTime: startDate,
     status: status ?? "Upcoming",
+    matchType,
+    map,
+    perspective,
     maxPlayers: maxPlayers ?? 100,
     joinedPlayersCount: 0,
     roomId: roomId ?? "",

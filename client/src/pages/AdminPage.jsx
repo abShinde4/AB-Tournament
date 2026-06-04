@@ -13,6 +13,9 @@ const initialMatch = {
   startTime: "",
   status: "Upcoming",
   maxPlayers: 100,
+  matchType: "",
+  map: "",
+  perspective: "",
 };
 
 const AdminPage = () => {
@@ -30,6 +33,7 @@ const AdminPage = () => {
   const [resultMatchId, setResultMatchId] = useState("");
   const [publishing, setPublishing] = useState(false);
   const [publishingMatchId, setPublishingMatchId] = useState(null);
+  const [editingMatchId, setEditingMatchId] = useState(null);
   const [notificationTitle, setNotificationTitle] = useState("");
   const [notificationMessage, setNotificationMessage] = useState("");
   const [recipientType, setRecipientType] = useState("all");
@@ -84,19 +88,53 @@ const AdminPage = () => {
   const createMatch = async (event) => {
     event.preventDefault();
     try {
-      await api.createMatch({
+      const payload = {
         ...matchForm,
         entryFee: Number(matchForm.entryFee),
         prizePool: Number(matchForm.prizePool),
         maxPlayers: Number(matchForm.maxPlayers),
         startTime: new Date(matchForm.startTime).toISOString(),
-      });
+      };
+      if (!payload.matchType) delete payload.matchType;
+      if (!payload.map) delete payload.map;
+      if (!payload.perspective) delete payload.perspective;
+
+      if (editingMatchId) {
+        await api.updateMatch(editingMatchId, payload);
+        toast.success("Tournament updated");
+      } else {
+        await api.createMatch(payload);
+        toast.success("Tournament created");
+      }
+
       setMatchForm(initialMatch);
-      toast.success("Tournament created");
+      setEditingMatchId(null);
       load();
     } catch (error) {
       toast.error(error.message);
     }
+  };
+
+  const editMatch = (match) => {
+    setMatchForm({
+      title: match.title || "",
+      game: match.game || "Free Fire",
+      entryFee: match.entryFee ?? 20,
+      prizePool: match.prizePool ?? 200,
+      startTime: match.startTime ? new Date(match.startTime).toISOString().slice(0, 16) : "",
+      status: match.status || "Upcoming",
+      maxPlayers: match.maxPlayers ?? 100,
+      matchType: match.matchType || "",
+      map: match.map || "",
+      perspective: match.perspective || "",
+    });
+    setEditingMatchId(match._id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const cancelEdit = () => {
+    setMatchForm(initialMatch);
+    setEditingMatchId(null);
   };
 
   const removeMatch = async (matchId) => {
@@ -321,11 +359,44 @@ const AdminPage = () => {
             <option>Free Fire</option>
             <option>BGMI</option>
           </select>
+          <select value={matchForm.matchType} onChange={(e) => setMatchForm({ ...matchForm, matchType: e.target.value })}>
+            <option value="">Match Type</option>
+            <option value="Solo">Solo</option>
+            <option value="Duo">Duo</option>
+            <option value="Squad">Squad</option>
+            <option value="TDM">TDM</option>
+            <option value="Arena">Arena</option>
+            <option value="Custom">Custom</option>
+          </select>
+          <select value={matchForm.map} onChange={(e) => setMatchForm({ ...matchForm, map: e.target.value })}>
+            <option value="">Map</option>
+            <option value="Erangel">Erangel</option>
+            <option value="Miramar">Miramar</option>
+            <option value="Sanhok">Sanhok</option>
+            <option value="Vikendi">Vikendi</option>
+            <option value="Livik">Livik</option>
+            <option value="Nusa">Nusa</option>
+            <option value="Random">Random</option>
+          </select>
+          <select value={matchForm.perspective} onChange={(e) => setMatchForm({ ...matchForm, perspective: e.target.value })}>
+            <option value="">Perspective</option>
+            <option value="TPP">TPP</option>
+            <option value="FPP">FPP</option>
+          </select>
           <input type="number" placeholder="Entry fee" value={matchForm.entryFee} onChange={(e) => setMatchForm({ ...matchForm, entryFee: e.target.value })} required />
           <input type="number" placeholder="Prize pool" value={matchForm.prizePool} onChange={(e) => setMatchForm({ ...matchForm, prizePool: e.target.value })} required />
           <input type="datetime-local" value={matchForm.startTime} onChange={(e) => setMatchForm({ ...matchForm, startTime: e.target.value })} required />
           <input type="number" placeholder="Max players" value={matchForm.maxPlayers} onChange={(e) => setMatchForm({ ...matchForm, maxPlayers: e.target.value })} required />
-          <button className="btn btn-primary" type="submit">Create</button>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <button className="btn btn-primary" type="submit">
+              {editingMatchId ? "Update Tournament" : "Create"}
+            </button>
+            {editingMatchId && (
+              <button className="btn btn-secondary" type="button" onClick={cancelEdit}>
+                Cancel
+              </button>
+            )}
+          </div>
         </form>
       </section>
 
@@ -413,6 +484,14 @@ const AdminPage = () => {
                   <td>INR {match.prizePool}</td>
                   <td>
                     <button className="btn btn-secondary" type="button" onClick={() => removeMatch(match._id)}>Delete</button>
+                    <button
+                      className="btn btn-secondary"
+                      type="button"
+                      onClick={() => editMatch(match)}
+                      style={{ marginLeft: '8px' }}
+                    >
+                      Edit
+                    </button>
                     <button 
                       className="btn btn-primary" 
                       type="button" 

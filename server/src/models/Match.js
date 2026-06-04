@@ -12,6 +12,21 @@ const matchSchema = new mongoose.Schema(
       enum: ["Upcoming", "Live", "Completed"],
       default: "Upcoming",
     },
+    matchType: {
+      type: String,
+      enum: ["Solo", "Duo", "Squad", "TDM", "Arena", "Custom"],
+      trim: true,
+    },
+    map: {
+      type: String,
+      enum: ["Erangel", "Miramar", "Sanhok", "Vikendi", "Livik", "Nusa", "Random"],
+      trim: true,
+    },
+    perspective: {
+      type: String,
+      enum: ["TPP", "FPP"],
+      trim: true,
+    },
     maxPlayers: { type: Number, default: 100, min: 1 },
     joinedPlayersCount: { type: Number, default: 0, min: 0 },
     roomId: { type: String, default: "", trim: true },

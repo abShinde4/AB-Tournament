@@ -1809,6 +1809,75 @@ td {
   min-width: 120px;
 }
 
+.match-details {
+  background: rgba(12, 18, 42, 0.82);
+  border: 1px solid rgba(85, 112, 255, 0.18);
+  border-radius: 18px;
+  padding: 0.9rem 1rem;
+  margin: 0.9rem 0 0.85rem;
+}
+
+.match-details h4 {
+  margin: 0 0 0.75rem;
+  font-size: 0.98rem;
+  letter-spacing: 0.01em;
+}
+
+.match-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.match-detail-pill {
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(17, 25, 57, 0.94), rgba(12, 18, 42, 0.96));
+  border: 1px solid rgba(122, 176, 255, 0.16);
+  padding: 0.75rem 0.85rem;
+}
+
+.match-detail-label {
+  display: block;
+  color: #afc5ff;
+  font-size: 0.82rem;
+  margin-bottom: 0.45rem;
+}
+
+.match-detail-pill strong {
+  display: block;
+  font-size: 0.95rem;
+  color: #e7f7ff;
+}
+
+.wallet-warning-card {
+  margin: 1rem 0 0.5rem;
+  padding: 1rem;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 169, 0, 0.28);
+  background: radial-gradient(circle at top left, rgba(255, 194, 87, 0.18), transparent 45%),
+    linear-gradient(180deg, rgba(27, 15, 42, 0.92), rgba(9, 12, 23, 0.96));
+  box-shadow: 0 0 24px rgba(255, 173, 0, 0.12);
+}
+
+.wallet-warning-card strong {
+  display: block;
+  margin-bottom: 0.65rem;
+  color: #ffd482;
+}
+
+.wallet-warning-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: #d8d3c7;
+  font-size: 0.92rem;
+}
+
+.wallet-warning-card p {
+  margin: 0.85rem 0 0;
+  color: #f7f0d6;
+}
+
 .full-width {
   width: 100%;
   margin-top: 0.5rem;

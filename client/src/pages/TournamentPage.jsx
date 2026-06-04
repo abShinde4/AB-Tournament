@@ -16,6 +16,10 @@ const formatCountdown = (msLeft) => {
   return `${hours}:${minutes}:${seconds}`;
 };
 
+const MATCH_TYPES = ["Solo", "Duo", "Squad", "TDM", "Arena", "Custom"];
+const MAP_NAMES = ["Erangel", "Miramar", "Sanhok", "Vikendi", "Livik", "Nusa", "Random"];
+const PERSPECTIVES = ["TPP", "FPP"];
+
 const TournamentPage = () => {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,7 +29,8 @@ const TournamentPage = () => {
   const [revealedPasswords, setRevealedPasswords] = useState({});
   const [roomUnlockNotified, setRoomUnlockNotified] = useState({});
   const [walletModal, setWalletModal] = useState({ open: false, amount: 100, title: "Pay Now" });
-  const { isAuthenticated, setUser } = useAuth();
+  const { isAuthenticated, setUser, user } = useAuth();
+  const walletBalance = user?.walletBalance ?? 0;
 
   const loadMatches = async () => {
     const res = await api.getMatches("limit=25");
@@ -134,6 +139,24 @@ const TournamentPage = () => {
         </p>
         {isLiveSoon && !started && <span className="live-badge">LIVE</span>}
 
+        <section className="match-details">
+          <h4>Match Details</h4>
+          <div className="match-detail-grid">
+            <div className="match-detail-pill">
+              <span className="match-detail-label">🎮 Type</span>
+              <strong>{match.matchType || "Not Specified"}</strong>
+            </div>
+            <div className="match-detail-pill">
+              <span className="match-detail-label">🗺️ Map</span>
+              <strong>{match.map || "Not Specified"}</strong>
+            </div>
+            <div className="match-detail-pill">
+              <span className="match-detail-label">⚔️ Mode</span>
+              <strong>{match.perspective || "Not Specified"}</strong>
+            </div>
+          </div>
+        </section>
+
         {match.isRoomPublished && !isUnlocked && (
           <div className="room-section locked">
             <div className="room-locked">
@@ -191,6 +214,25 @@ const TournamentPage = () => {
           </div>
         )}
 
+        {walletBalance < (match.entryFee || 20) && !match.isJoined && match.joinRequestStatus !== "pending" && match.remainingSlots > 0 && (
+          <div className="wallet-warning-card">
+            <strong>⚠ Insufficient Wallet Balance</strong>
+            <div className="wallet-warning-row">
+              <span>Entry Fee:</span>
+              <span>₹{match.entryFee || 20}</span>
+            </div>
+            <div className="wallet-warning-row">
+              <span>Wallet Balance:</span>
+              <span>₹{walletBalance}</span>
+            </div>
+            <div className="wallet-warning-row">
+              <span>Required:</span>
+              <span>₹{Math.max((match.entryFee || 20) - walletBalance, 0)}</span>
+            </div>
+            <p>Add Money to continue.</p>
+          </div>
+        )}
+
         <PlayerCountBar 
           joinedCount={match.joinedPlayersCount || 0} 
           maxPlayers={match.maxPlayers || 100}
@@ -198,42 +240,41 @@ const TournamentPage = () => {
 
         <div className="tournament-actions">
           {match.isJoined ? (
-            <button className="btn btn-secondary" type="button" disabled>
+            <button className="btn btn-secondary full-width" type="button" disabled>
               Joined
             </button>
           ) : match.joinRequestStatus === "pending" ? (
-            <button className="btn btn-secondary" type="button" disabled>
+            <button className="btn btn-secondary full-width" type="button" disabled>
               Pending Approval
             </button>
           ) : (
-            <>
-              <button
-                className="btn btn-primary"
-                type="button"
-                disabled={match.remainingSlots === 0}
-                onClick={() => {
-                  if (!isAuthenticated) {
-                    toast.error("Please login first.");
-                    return;
-                  }
-                  setWalletModal({
-                    open: true,
-                    amount: match.entryFee || 20,
-                    title: `Recharge — ${match.title}`,
-                  });
-                }}
-              >
-                {match.remainingSlots === 0 ? "Tournament Full" : "Pay Now"}
-              </button>
-              <button
-                className="btn btn-secondary"
-                onClick={() => handleJoin(match._id)}
-                type="button"
-                disabled={loadingId === match._id || match.remainingSlots === 0}
-              >
-                {loadingId === match._id ? "Requesting..." : "Join with Wallet"}
-              </button>
-            </>
+            <button
+              className="btn btn-primary full-width"
+              type="button"
+              disabled={match.remainingSlots === 0}
+              onClick={() => {
+                if (!isAuthenticated) {
+                  toast.error("Please login first.");
+                  return;
+                }
+                if (walletBalance >= (match.entryFee || 20)) {
+                  handleJoin(match._id);
+                  return;
+                }
+                const amountToAdd = Math.max((match.entryFee || 20) - walletBalance, 0);
+                setWalletModal({
+                  open: true,
+                  amount: amountToAdd || (match.entryFee || 20),
+                  title: `Add ₹${amountToAdd} to Wallet`,
+                });
+              }}
+            >
+              {match.remainingSlots === 0
+                ? "Tournament Full"
+                : walletBalance >= (match.entryFee || 20)
+                ? "Join Match with Wallet"
+                : `Add ₹${Math.max((match.entryFee || 20) - walletBalance, 0)} to Wallet`}
+            </button>
           )}
         </div>
       </article>
