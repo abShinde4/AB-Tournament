@@ -1,24 +1,9 @@
+import { getYouTubeThumbnailUrl } from "../utils/youtubeUtils";
 import "./WinnerHighlightCard.css";
 
 const WinnerHighlightCard = ({ highlight, onCardClick }) => {
-  const getThumbnailUrl = (url) => {
-    if (highlight.thumbnailUrl) return highlight.thumbnailUrl;
-
-    // Generate YouTube thumbnail if URL exists
-    if (url?.includes("youtube.com/shorts/")) {
-      const videoId = url.split("/shorts/")[1]?.split("?")[0];
-      return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null;
-    } else if (url?.includes("youtu.be/")) {
-      const videoId = url.split("youtu.be/")[1]?.split("?")[0];
-      return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null;
-    } else if (url?.includes("youtube.com/watch")) {
-      const videoId = new URLSearchParams(new URL(url).search).get("v");
-      return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null;
-    }
-    return null;
-  };
-
-  const thumbnailUrl = getThumbnailUrl(highlight.youtubeUrl);
+  const thumbnailUrl =
+    highlight.thumbnailUrl || getYouTubeThumbnailUrl(highlight.youtubeUrl);
   const hasVideo = highlight.youtubeUrl || highlight.instagramUrl;
 
   return (

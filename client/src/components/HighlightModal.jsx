@@ -1,8 +1,25 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getYouTubeEmbedUrl } from "../utils/youtubeUtils";
 import "./HighlightModal.css";
 
 const HighlightModal = ({ isOpen, highlight, onClose }) => {
   const [activeTab, setActiveTab] = useState("youtube");
+  const [embedFailed, setEmbedFailed] = useState(false);
+
+  const youtubeEmbedUrl = highlight ? getYouTubeEmbedUrl(highlight.youtubeUrl) : null;
+
+  useEffect(() => {
+    if (!isOpen || !highlight) return;
+
+    setEmbedFailed(false);
+
+    if (youtubeEmbedUrl) {
+      console.log("[WinnerHighlight] YouTube iframe src:", youtubeEmbedUrl);
+      console.log("[WinnerHighlight] Generated embed URL:", youtubeEmbedUrl);
+    } else if (highlight.youtubeUrl) {
+      console.warn("[WinnerHighlight] Could not generate embed URL from:", highlight.youtubeUrl);
+    }
+  }, [isOpen, highlight, youtubeEmbedUrl]);
 
   if (!isOpen || !highlight) return null;
 
@@ -10,21 +27,12 @@ const HighlightModal = ({ isOpen, highlight, onClose }) => {
     if (e.target === e.currentTarget) onClose();
   };
 
-  const getYouTubeEmbedUrl = (url) => {
-    if (!url) return null;
-    // Extract video ID from YouTube URL
-    let videoId;
-    if (url.includes("youtube.com/shorts/")) {
-      videoId = url.split("/shorts/")[1]?.split("?")[0];
-    } else if (url.includes("youtu.be/")) {
-      videoId = url.split("youtu.be/")[1]?.split("?")[0];
-    } else if (url.includes("youtube.com/watch")) {
-      videoId = new URLSearchParams(new URL(url).search).get("v");
-    }
-    return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+  const handleIframeError = () => {
+    console.warn("[WinnerHighlight] YouTube embed failed, showing fallback link.");
+    setEmbedFailed(true);
   };
 
-  const youtubeEmbedUrl = getYouTubeEmbedUrl(highlight.youtubeUrl);
+  const showYouTubeFallback = highlight.youtubeUrl && (!youtubeEmbedUrl || embedFailed);
 
   return (
     <div className="highlight-modal-backdrop" onClick={handleBackdropClick}>
@@ -59,7 +67,7 @@ const HighlightModal = ({ isOpen, highlight, onClose }) => {
           </div>
 
           <div className="highlight-modal-viewer">
-            {activeTab === "youtube" && youtubeEmbedUrl ? (
+            {activeTab === "youtube" && youtubeEmbedUrl && !embedFailed ? (
               <iframe
                 width="100%"
                 height="500"
@@ -67,11 +75,20 @@ const HighlightModal = ({ isOpen, highlight, onClose }) => {
                 title={highlight.winnerName}
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
                 allowFullScreen
-              ></iframe>
-            ) : activeTab === "youtube" && highlight.youtubeUrl ? (
-              <a href={highlight.youtubeUrl} target="_blank" rel="noopener noreferrer" className="highlight-link-button">
-                Open YouTube Short ↗️
+                onError={handleIframeError}
+              />
+            ) : null}
+
+            {activeTab === "youtube" && showYouTubeFallback ? (
+              <a
+                href={highlight.youtubeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="highlight-link-button"
+              >
+                Watch on YouTube
               </a>
             ) : null}
 
