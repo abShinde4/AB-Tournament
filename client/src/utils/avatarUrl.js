@@ -1,7 +1,9 @@
+import { API_BASE_URL } from "./apiConfig";
+
 export const buildAvatarUrl = (avatar) => {
   if (!avatar) return "";
 
-  const apiBase = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  const apiBase = API_BASE_URL;
   const baseUrl = apiBase.replace(/\/api\/?$/, "");
 
   if (/^https?:\/\//i.test(avatar)) {

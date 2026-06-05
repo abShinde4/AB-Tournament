@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { useAuth } from "../context/useAuth";
+import { API_BASE_URL, formatFetchError } from "../utils/apiConfig";
 
 const initialForm = { username: "", email: "", password: "" };
 const initialOtpForm = { email: "", otp: "" };
@@ -68,20 +69,29 @@ const AuthPage = () => {
     setLoading(true);
     setMessage("");
     try {
-      const response = await fetch(
-        (import.meta.env.VITE_API_URL || "http://localhost:5000/api") + "/otp/send-otp",
-        {
+      let response;
+      try {
+        response = await fetch(`${API_BASE_URL}/otp/send-otp`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: otpForm.email }),
-        }
-      );
-      
+        });
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.log("API URL:", API_BASE_URL);
+        // eslint-disable-next-line no-console
+        console.log("Error:", error);
+        throw new Error(formatFetchError(error, "/otp/send-otp"));
+      }
+
+      // eslint-disable-next-line no-console
+      console.log("Response:", response);
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || "Failed to send OTP");
       }
-      
+
       const data = await response.json();
       setMessage(data.message);
       setOtpSent(true);
@@ -104,20 +114,29 @@ const AuthPage = () => {
     setLoading(true);
     setMessage("");
     try {
-      const response = await fetch(
-        (import.meta.env.VITE_API_URL || "http://localhost:5000/api") + "/otp/verify-otp",
-        {
+      let response;
+      try {
+        response = await fetch(`${API_BASE_URL}/otp/verify-otp`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: otpForm.email, otp: otpForm.otp }),
-        }
-      );
-      
+        });
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.log("API URL:", API_BASE_URL);
+        // eslint-disable-next-line no-console
+        console.log("Error:", error);
+        throw new Error(formatFetchError(error, "/otp/verify-otp"));
+      }
+
+      // eslint-disable-next-line no-console
+      console.log("Response:", response);
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || "OTP verification failed");
       }
-      
+
       const data = await response.json();
       setSession(data);
       navigate(redirectPath, { replace: true });

@@ -35,6 +35,21 @@ const validateEnvironment = () => {
     throw new Error("JWT_SECRET missing in .env");
   }
 
+  if (!process.env.CLIENT_URL) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      "CLIENT_URL missing — CORS still allows localhost and *.vercel.app, but set CLIENT_URL on Render for custom domains."
+    );
+  } else {
+    // eslint-disable-next-line no-console
+    console.log("CLIENT_URL configured:", process.env.CLIENT_URL);
+  }
+
+  if (!process.env.RESEND_API_KEY && (!process.env.EMAIL_USER || !process.env.EMAIL_PASS)) {
+    // eslint-disable-next-line no-console
+    console.warn("RESEND_API_KEY and Gmail SMTP credentials are both missing — email delivery disabled.");
+  }
+
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
     // eslint-disable-next-line no-console
     console.warn(

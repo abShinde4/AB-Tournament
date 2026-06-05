@@ -6,7 +6,7 @@
 /**
  * Check if room is unlocked and accessible
  */
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+import { API_BASE_URL, formatFetchError } from "./apiConfig";
 
 export const isRoomUnlocked = (matchDetails) => {
   if (!matchDetails || !matchDetails.isRoomPublished) return false;
@@ -60,12 +60,15 @@ export const formatTimeUntilUnlock = (timeDiff) => {
  */
 export const fetchMatchDetails = async (matchId, token) => {
   try {
-    const response = await fetch(`/api/matches/${matchId}/details`, {
+    const response = await fetch(`${API_BASE_URL}/matches/${matchId}/details`, {
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
     });
+
+    // eslint-disable-next-line no-console
+    console.log("Response:", response);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch match details: ${response.status}`);
@@ -73,7 +76,11 @@ export const fetchMatchDetails = async (matchId, token) => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error fetching match details:', error);
+    // eslint-disable-next-line no-console
+    console.log("API URL:", API_BASE_URL);
+    // eslint-disable-next-line no-console
+    console.log("Error:", error);
+    console.error("Error fetching match details:", formatFetchError(error, `/matches/${matchId}/details`));
     return null;
   }
 };
@@ -87,7 +94,9 @@ export const publishRoom = async (matchId, roomId, roomPassword, token) => {
     throw new Error("Missing authentication token. Please login again.");
   }
 
-  const response = await fetch(`${API_BASE_URL}/admin/publish-room/${matchId}`, {
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}/admin/publish-room/${matchId}`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${authToken}`,
@@ -97,7 +106,17 @@ export const publishRoom = async (matchId, roomId, roomPassword, token) => {
       roomId: roomId.trim(),
       roomPassword: roomPassword.trim(),
     }),
-  });
+    });
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.log("API URL:", API_BASE_URL);
+    // eslint-disable-next-line no-console
+    console.log("Error:", error);
+    throw new Error(formatFetchError(error, `/admin/publish-room/${matchId}`));
+  }
+
+  // eslint-disable-next-line no-console
+  console.log("Response:", response);
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {

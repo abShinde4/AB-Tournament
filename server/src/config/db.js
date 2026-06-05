@@ -21,9 +21,18 @@ const connectDb = async () => {
 
   try {
     await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 5000 });
+
+    mongoose.connection.on("error", (err) => {
+      // eslint-disable-next-line no-console
+      console.error("MongoDB Error:", err.message || err);
+    });
+
     // eslint-disable-next-line no-console
-    console.log("MongoDB connected", { dbName: mongoose.connection.name });
+    console.log("MongoDB Connected", { dbName: mongoose.connection.name });
   } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error("MongoDB Error:", error.message || error);
+
     if (process.env.NODE_ENV === "production") {
       throw error;
     }

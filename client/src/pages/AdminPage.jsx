@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { api } from "../api";
+import { api, API_BASE_URL } from "../api";
 import { useAuth } from "../context/useAuth";
 import AdminResultTable from "../components/AdminResultTable";
 import AdminRoomPublisher from "../components/AdminRoomPublisher";
@@ -214,7 +214,7 @@ const AdminPage = () => {
     }
   };
 
-  const apiOrigin = (import.meta.env.VITE_API_URL || "http://localhost:5000/api").replace(/\/api\/?$/, "");
+  const apiOrigin = API_BASE_URL.replace(/\/api\/?$/, "");
 
   const approvePayment = async (requestId) => {
     try {

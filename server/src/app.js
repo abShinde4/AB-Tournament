@@ -21,16 +21,47 @@ const Notification = require("./models/Notification");
 const app = express();
 app.set("trust proxy", 1);
 
-app.use(helmet());
-app.use(cors({
-  origin: [
+const buildAllowedOrigins = () => {
+  const origins = new Set([
     "http://localhost:5173",
+    "http://localhost:3000",
     "https://ab-tournament.vercel.app",
-    "https://ab-tournament-git-main-abshinde4s-projects.vercel.app"
-  ],
-  
-  credentials: true
-}));
+    "https://www.ab-tournament.vercel.app",
+    "https://ab-tournament-git-main-abshinde4s-projects.vercel.app",
+  ]);
+
+  if (process.env.CLIENT_URL) {
+    origins.add(process.env.CLIENT_URL.replace(/\/$/, ""));
+  }
+
+  return origins;
+};
+
+const allowedOrigins = buildAllowedOrigins();
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  if (allowedOrigins.has(origin)) return true;
+  if (/^https:\/\/[\w-]+(?:-[\w-]+)*\.vercel\.app$/i.test(origin)) return true;
+  return false;
+};
+
+app.use(helmet());
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (isAllowedOrigin(origin)) {
+        callback(null, origin);
+        return;
+      }
+
+      // eslint-disable-next-line no-console
+      console.warn("CORS blocked origin:", origin);
+      callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(morgan("dev"));
 
@@ -51,7 +82,12 @@ const authLimiter = rateLimit({
 app.use("/api", globalLimiter);
 
 app.get("/api/health", (_req, res) => {
-  res.json({ ok: true, service: "AB Tournament API", now: new Date().toISOString() });
+  res.json({
+    success: true,
+    message: "Backend running",
+    service: "AB Tournament API",
+    now: new Date().toISOString(),
+  });
 });
 
 app.use("/api/auth", authLimiter, authRoutes);

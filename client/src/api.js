@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+import { API_BASE_URL, formatFetchError } from "./utils/apiConfig";
 
 const getToken = () => localStorage.getItem("ab_token");
 
@@ -11,10 +11,22 @@ const request = async (endpoint, options = {}) => {
   };
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.log("API URL:", API_BASE_URL);
+    // eslint-disable-next-line no-console
+    console.log("Error:", error);
+    throw new Error(formatFetchError(error, endpoint));
+  }
+
+  // eslint-disable-next-line no-console
+  console.log("Response:", response);
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -24,10 +36,20 @@ const request = async (endpoint, options = {}) => {
           .filter(Boolean)
           .join(", ")
       : "";
-    throw new Error(validationMessage || data.message || "Request failed");
+
+    const statusHint =
+      response.status >= 500
+        ? "Database Error or server failure — check Render logs."
+        : "";
+
+    throw new Error(
+      validationMessage || data.message || statusHint || `Request failed (${response.status})`
+    );
   }
   return data;
 };
+
+export { API_BASE_URL };
 
 export const api = {
   getMatches: (params = "") => request(`/matches${params ? `?${params}` : ""}`),
@@ -136,4 +158,3 @@ export const api = {
   deleteHighlight: (highlightId) =>
     request(`/highlights/${highlightId}`, { method: "DELETE" }),
 };
-
