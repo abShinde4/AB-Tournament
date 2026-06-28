@@ -5,6 +5,7 @@ import { useAuth } from "../context/useAuth";
 import AdminResultTable from "../components/AdminResultTable";
 import AdminRoomPublisher from "../components/AdminRoomPublisher";
 import HighlightForm from "../components/HighlightForm";
+import SquadTeamsSection from "../components/admin/SquadTeamsSection";
 
 const initialMatch = {
   title: "",
@@ -964,6 +965,8 @@ const AdminPage = () => {
           </table>
         </div>
       </section>
+
+      <SquadTeamsSection matches={matches} />
     </main>
   );
 };

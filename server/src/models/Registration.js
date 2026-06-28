@@ -10,6 +10,7 @@ const registrationSchema = new mongoose.Schema(
     verificationNotes: { type: String, default: "", trim: true },
     verifiedAt: { type: Date, default: null },
     verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+    squadTeam: { type: mongoose.Schema.Types.ObjectId, ref: "SquadTeam", default: null },
   },
   { timestamps: true }
 );

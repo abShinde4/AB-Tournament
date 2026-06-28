@@ -6,6 +6,9 @@ import Skeleton from "../components/Skeleton";
 import Countdown from "../components/Countdown";
 import { PlayerCountBar } from "../components/PlayerCountBar";
 import WalletRechargeModal from "../components/WalletRechargeModal";
+import SquadTeamActions from "../components/squad/SquadTeamActions";
+import SquadTeamCardStats from "../components/squad/SquadTeamCardStats";
+import "../components/squad/squad-team.css";
 
 const formatCountdown = (msLeft) => {
   if (msLeft <= 0) return "Match Started";
@@ -214,6 +217,23 @@ const TournamentPage = () => {
           </div>
         )}
 
+        {match.isSquadMatch ? (
+          <>
+            <SquadTeamCardStats
+              joinedTeamsCount={match.joinedTeamsCount || 0}
+              maxTeams={match.maxTeams || 25}
+              remainingTeamSlots={match.remainingTeamSlots ?? 0}
+            />
+            <SquadTeamActions
+              match={match}
+              user={user}
+              isAuthenticated={isAuthenticated}
+              walletBalance={walletBalance}
+              onRefresh={loadMatches}
+            />
+          </>
+        ) : (
+          <>
         {walletBalance < (match.entryFee || 20) && !match.isJoined && match.joinRequestStatus !== "pending" && match.remainingSlots > 0 && (
           <div className="wallet-warning-card">
             <strong>⚠ Insufficient Wallet Balance</strong>
@@ -277,6 +297,8 @@ const TournamentPage = () => {
             </button>
           )}
         </div>
+          </>
+        )}
       </article>
     );
   };

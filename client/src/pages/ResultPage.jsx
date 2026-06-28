@@ -4,9 +4,11 @@ import toast from "react-hot-toast";
 import Skeleton from "../components/Skeleton";
 import WinnerHighlightCard from "../components/WinnerHighlightCard";
 import HighlightModal from "../components/HighlightModal";
+import SquadTeamWinner from "../components/results/SquadTeamWinner";
 
 const ResultPage = () => {
   const [results, setResults] = useState([]);
+  const [squadResults, setSquadResults] = useState([]);
   const [highlights, setHighlights] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -17,10 +19,12 @@ const ResultPage = () => {
     Promise.all([
       api.getResults("limit=50"),
       api.getHighlights("limit=50"),
+      api.getSquadResults("limit=50"),
     ])
-      .then(([resultsRes, highlightsRes]) => {
+      .then(([resultsRes, highlightsRes, squadResultsRes]) => {
         setResults(resultsRes.data || []);
         setHighlights(highlightsRes.data || []);
+        setSquadResults(squadResultsRes.data || []);
         if ((resultsRes.data || []).length > 0) {
           toast.success("Results loaded");
         }
@@ -51,6 +55,8 @@ const ResultPage = () => {
       <h2>Results</h2>
       {error && <p className="state-text">{error}</p>}
       {loading && <Skeleton height={220} />}
+
+      <SquadTeamWinner results={squadResults} />
       
       {/* Winner Highlights Section */}
       {highlights.length > 0 && (

@@ -14,6 +14,8 @@ const transactionSchema = new mongoose.Schema(
         "admin_adjustment",
         "withdraw_request",
         "withdraw_refund",
+        "squad_team_entry",
+        "squad_team_winnings",
       ],
       required: true,
     },

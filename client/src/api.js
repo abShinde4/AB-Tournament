@@ -1,4 +1,5 @@
 import { API_BASE_URL, formatFetchError } from "./utils/apiConfig";
+import { squadTeamApi } from "./api/squadTeamApi";
 
 const getToken = () => localStorage.getItem("ab_token");
 
@@ -157,4 +158,5 @@ export const api = {
     request("/highlights", { method: "POST", body: JSON.stringify(payload) }),
   deleteHighlight: (highlightId) =>
     request(`/highlights/${highlightId}`, { method: "DELETE" }),
+  ...squadTeamApi,
 };

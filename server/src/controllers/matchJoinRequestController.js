@@ -14,6 +14,13 @@ const submitMatchJoinRequest = async (req, res) => {
   const match = await Match.findById(matchId);
   if (!match) return res.status(404).json({ message: "Match not found." });
 
+  if (match.matchType === "Squad") {
+    return res.status(400).json({
+      message: "Squad tournaments use team registration. Create or join a team instead.",
+      useSquadTeamRegistration: true,
+    });
+  }
+
   const effectiveStatus = normalizeMatchStatus(match);
   if (effectiveStatus !== "Upcoming") {
     return res.status(400).json({ message: "You can join only upcoming matches." });

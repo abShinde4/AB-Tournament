@@ -6,6 +6,8 @@ const Notification = require("../models/Notification");
 const Result = require("../models/Result");
 const TournamentPayment = require("../models/TournamentPayment");
 const MatchJoinRequest = require("../models/MatchJoinRequest");
+const SquadTeam = require("../models/SquadTeam");
+const { getMaxTeams, serializeTeam } = require("../services/squadTeamService");
 const mongoose = require("mongoose");
 const roomUnlockMs = 10 * 60 * 1000;
 
@@ -23,7 +25,9 @@ const serializeMatch = (
   match,
   joinedMatchIds = new Set(),
   paymentStatusMap = new Map(),
-  joinRequestStatusMap = new Map()
+  joinRequestStatusMap = new Map(),
+  squadTeamMap = new Map(),
+  squadStatsMap = new Map()
 ) => {
   const item = typeof match.toObject === "function" ? match.toObject() : match;
   const now = Date.now();
@@ -34,6 +38,7 @@ const serializeMatch = (
   const userJoined = joinedMatchIds.has(String(item._id));
   const paymentStatus = paymentStatusMap.get(String(item._id)) || null;
   const joinRequestStatus = joinRequestStatusMap.get(String(item._id)) || null;
+  const isSquadMatch = item.matchType === "Squad";
 
   const safe = {
     ...item,
@@ -49,7 +54,19 @@ const serializeMatch = (
     isJoined: userJoined,
     paymentStatus,
     joinRequestStatus,
+    isSquadMatch,
   };
+
+  if (isSquadMatch) {
+    const stats = squadStatsMap.get(String(item._id)) || {};
+    const maxTeams = stats.maxTeams ?? getMaxTeams(item);
+    const joinedTeamsCount = stats.joinedTeamsCount ?? item.joinedTeamsCount ?? 0;
+    safe.maxTeams = maxTeams;
+    safe.joinedTeamsCount = joinedTeamsCount;
+    safe.remainingTeamSlots = Math.max(maxTeams - joinedTeamsCount, 0);
+    safe.mySquadTeam = squadTeamMap.get(String(item._id)) || null;
+  }
+
   if (safe.isRoomVisible && userJoined) {
     safe.roomId = item.roomId || "";
     safe.roomPassword = item.roomPassword || "";
@@ -167,9 +184,58 @@ const listMatches = async (req, res) => {
     await Match.bulkWrite(bulkOps);
   }
 
+  const squadMatchIds = patchedMatches.filter((m) => m.matchType === "Squad").map((m) => m._id);
+  const squadStatsMap = new Map();
+  const squadTeamMap = new Map();
+
+  if (squadMatchIds.length) {
+    const teamCounts = await SquadTeam.aggregate([
+      { $match: { tournament: { $in: squadMatchIds } } },
+      { $group: { _id: "$tournament", count: { $sum: 1 } } },
+    ]);
+    teamCounts.forEach((row) => {
+      const matchItem = patchedMatches.find((m) => String(m._id) === String(row._id));
+      const maxTeams = matchItem ? getMaxTeams(matchItem) : 25;
+      squadStatsMap.set(String(row._id), {
+        joinedTeamsCount: row.count,
+        maxTeams,
+      });
+    });
+
+    squadMatchIds.forEach((id) => {
+      if (!squadStatsMap.has(String(id))) {
+        const matchItem = patchedMatches.find((m) => String(m._id) === String(id));
+        squadStatsMap.set(String(id), {
+          joinedTeamsCount: matchItem?.joinedTeamsCount || 0,
+          maxTeams: matchItem ? getMaxTeams(matchItem) : 25,
+        });
+      }
+    });
+
+    if (req.user?._id) {
+      const userTeams = await SquadTeam.find({
+        tournament: { $in: squadMatchIds },
+        "players.user": req.user._id,
+      });
+      userTeams.forEach((team) => {
+        const matchItem = patchedMatches.find((m) => String(m._id) === String(team.tournament));
+        if (matchItem) {
+          squadTeamMap.set(String(team.tournament), serializeTeam(team, matchItem));
+        }
+      });
+    }
+  }
+
   return res.json({
     data: patchedMatches.map((match) =>
-      serializeMatch(match, joinedMatchIds, paymentStatusMap, joinRequestStatusMap)
+      serializeMatch(
+        match,
+        joinedMatchIds,
+        paymentStatusMap,
+        joinRequestStatusMap,
+        squadTeamMap,
+        squadStatsMap
+      )
     ),
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     serverTime: new Date().toISOString(),

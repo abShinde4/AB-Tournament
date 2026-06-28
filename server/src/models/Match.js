@@ -29,6 +29,8 @@ const matchSchema = new mongoose.Schema(
     },
     maxPlayers: { type: Number, default: 100, min: 1 },
     joinedPlayersCount: { type: Number, default: 0, min: 0 },
+    maxTeams: { type: Number, default: null, min: 1 },
+    joinedTeamsCount: { type: Number, default: 0, min: 0 },
     roomId: { type: String, default: "", trim: true },
     roomPassword: { type: String, default: "", trim: true },
     roomUnlockTime: { type: Date, default: null },
