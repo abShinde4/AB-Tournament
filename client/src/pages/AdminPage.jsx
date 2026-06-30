@@ -18,6 +18,14 @@ const initialMatch = {
   matchType: "",
   map: "",
   perspective: "",
+  description: "",
+  bannerImage: "",
+  rules: "",
+  requirements: "",
+  discordLink: "",
+  youtubeLink: "",
+  instagramLink: "",
+  roomNotes: "",
 };
 
 const AdminPage = () => {
@@ -47,11 +55,17 @@ const AdminPage = () => {
   const [highlights, setHighlights] = useState([]);
   const [highlightLoading, setHighlightLoading] = useState(false);
   const [showHighlightForm, setShowHighlightForm] = useState(false);
+  const [announcementForm, setAnnouncementForm] = useState({
+    title: "",
+    message: "",
+    priority: "normal",
+  });
+  const [announcements, setAnnouncements] = useState([]);
 
   const canAccess = user?.role === "admin";
 
   const load = async () => {
-    const [statsRes, matchesRes, usersRes, regRes, walletRes, withdrawRes, paymentRes, walletPaymentRes, matchJoinRes, resultsRes, highlightsRes] =
+    const [statsRes, matchesRes, usersRes, regRes, walletRes, withdrawRes, paymentRes, walletPaymentRes, matchJoinRes, resultsRes, highlightsRes, announcementsRes] =
       await Promise.all([
       api.getAdminStats(),
       api.getMatches("limit=30"),
@@ -64,6 +78,7 @@ const AdminPage = () => {
       api.getAdminMatchJoinRequests("limit=50&status=pending"),
       api.getResults("limit=100"),
       api.getHighlights("limit=20"),
+      api.getAdminAnnouncements(),
     ]);
     // eslint-disable-next-line no-console
     console.log("Admin stats received:", statsRes);
@@ -87,6 +102,7 @@ const AdminPage = () => {
     setMatchJoinRequests(matchJoinRes.data || []);
     setResults(resultsRes.data || []);
     setHighlights(highlightsRes.data || []);
+    setAnnouncements(announcementsRes.data || []);
   };
 
   useEffect(() => {
@@ -137,6 +153,14 @@ const AdminPage = () => {
       matchType: match.matchType || "",
       map: match.map || "",
       perspective: match.perspective || "",
+      description: match.description || "",
+      bannerImage: match.bannerImage || "",
+      rules: match.rules || "",
+      requirements: match.requirements || "",
+      discordLink: match.discordLink || "",
+      youtubeLink: match.youtubeLink || "",
+      instagramLink: match.instagramLink || "",
+      roomNotes: match.roomNotes || "",
     });
     setEditingMatchId(match._id);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -439,6 +463,14 @@ const AdminPage = () => {
           <input type="number" placeholder="Prize pool" value={matchForm.prizePool} onChange={(e) => setMatchForm({ ...matchForm, prizePool: e.target.value })} required />
           <input type="datetime-local" value={matchForm.startTime} onChange={(e) => setMatchForm({ ...matchForm, startTime: e.target.value })} required />
           <input type="number" placeholder="Max players" value={matchForm.maxPlayers} onChange={(e) => setMatchForm({ ...matchForm, maxPlayers: e.target.value })} required />
+          <input placeholder="Banner image URL" value={matchForm.bannerImage} onChange={(e) => setMatchForm({ ...matchForm, bannerImage: e.target.value })} />
+          <textarea placeholder="Tournament description" value={matchForm.description} onChange={(e) => setMatchForm({ ...matchForm, description: e.target.value })} rows={3} />
+          <textarea placeholder="Rules" value={matchForm.rules} onChange={(e) => setMatchForm({ ...matchForm, rules: e.target.value })} rows={3} />
+          <textarea placeholder="Requirements" value={matchForm.requirements} onChange={(e) => setMatchForm({ ...matchForm, requirements: e.target.value })} rows={2} />
+          <input placeholder="Discord link (optional)" value={matchForm.discordLink} onChange={(e) => setMatchForm({ ...matchForm, discordLink: e.target.value })} />
+          <input placeholder="YouTube link (optional)" value={matchForm.youtubeLink} onChange={(e) => setMatchForm({ ...matchForm, youtubeLink: e.target.value })} />
+          <input placeholder="Instagram link (optional)" value={matchForm.instagramLink} onChange={(e) => setMatchForm({ ...matchForm, instagramLink: e.target.value })} />
+          <textarea placeholder="Room notes" value={matchForm.roomNotes} onChange={(e) => setMatchForm({ ...matchForm, roomNotes: e.target.value })} rows={2} />
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
             <button className="btn btn-primary" type="submit">
               {editingMatchId ? "Update Tournament" : "Create"}
@@ -450,6 +482,89 @@ const AdminPage = () => {
             )}
           </div>
         </form>
+      </section>
+
+      <section className="card">
+        <h3>Create Announcement</h3>
+        <form
+          className="form-grid"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            try {
+              await api.createAnnouncement(announcementForm);
+              toast.success("Announcement published");
+              setAnnouncementForm({ title: "", message: "", priority: "normal" });
+              load();
+            } catch (error) {
+              toast.error(error.message);
+            }
+          }}
+        >
+          <input
+            placeholder="Title"
+            value={announcementForm.title}
+            onChange={(e) => setAnnouncementForm({ ...announcementForm, title: e.target.value })}
+            required
+          />
+          <textarea
+            placeholder="Message"
+            value={announcementForm.message}
+            onChange={(e) => setAnnouncementForm({ ...announcementForm, message: e.target.value })}
+            rows={3}
+            required
+          />
+          <select
+            value={announcementForm.priority}
+            onChange={(e) => setAnnouncementForm({ ...announcementForm, priority: e.target.value })}
+          >
+            <option value="normal">Normal</option>
+            <option value="important">Important</option>
+            <option value="urgent">Urgent</option>
+          </select>
+          <button className="btn btn-primary" type="submit">Publish Announcement</button>
+        </form>
+        {announcements.length > 0 && (
+          <div className="table-wrap" style={{ marginTop: "1rem" }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {announcements.map((item) => (
+                  <tr key={item._id}>
+                    <td>{item.title}</td>
+                    <td>{item.priority}</td>
+                    <td>{item.isActive ? "Active" : "Inactive"}</td>
+                    <td>
+                      {item.isActive && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={async () => {
+                            try {
+                              await api.deactivateAnnouncement(item._id);
+                              toast.success("Announcement deactivated");
+                              load();
+                            } catch (error) {
+                              toast.error(error.message);
+                            }
+                          }}
+                        >
+                          Dismiss
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       <section className="card">

@@ -51,8 +51,8 @@ const ResultPage = () => {
   };
 
   return (
-    <main className="page">
-      <h2>Results</h2>
+    <main className="page v2-page">
+      <h2 className="v2-page-title">📢 Results</h2>
       {error && <p className="state-text">{error}</p>}
       {loading && <Skeleton height={220} />}
 

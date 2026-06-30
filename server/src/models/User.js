@@ -9,12 +9,16 @@ const userSchema = new mongoose.Schema(
       minlength: 3,
       maxlength: 24,
     },
+    fullName: { type: String, default: "", trim: true, maxlength: 60 },
+    phoneNumber: { type: String, trim: true, unique: true, sparse: true },
+    whatsappNumber: { type: String, default: "", trim: true },
     email: {
       type: String,
-      required: true,
       unique: true,
+      sparse: true,
       lowercase: true,
       trim: true,
+      default: null,
     },
     password: {
       type: String,

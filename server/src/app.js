@@ -17,6 +17,7 @@ const adminRoutes = require("./routes/adminRoutes");
 const userRoutes = require("./routes/userRoutes");
 const highlightRoutes = require("./routes/highlightRoutes");
 const squadTeamRoutes = require("./routes/squadTeamRoutes");
+const announcementRoutes = require("./routes/announcementRoutes");
 const Notification = require("./models/Notification");
 
 const app = express();
@@ -66,16 +67,20 @@ app.use(
 app.use(express.json());
 app.use(morgan("dev"));
 
+const isProduction = process.env.NODE_ENV === "production";
+
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 250,
+  limit: isProduction ? 250 : 10000,
+  skip: () => !isProduction,
   standardHeaders: "draft-7",
   legacyHeaders: false,
 });
 
 const authLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  limit: 40,
+  limit: isProduction ? 40 : 1000,
+  skip: () => !isProduction,
   standardHeaders: "draft-7",
   legacyHeaders: false,
 });
@@ -104,6 +109,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/highlights", highlightRoutes);
 app.use("/api/squad-teams", squadTeamRoutes);
+app.use("/api/announcements", announcementRoutes);
 
 const ensureSampleNotifications = async () => {
   try {

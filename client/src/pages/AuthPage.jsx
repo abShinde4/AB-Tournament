@@ -1,25 +1,31 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { useAuth } from "../context/useAuth";
-import { API_BASE_URL, formatFetchError } from "../utils/apiConfig";
 
-const initialForm = { username: "", email: "", password: "" };
-const initialOtpForm = { email: "", otp: "" };
+const initialLogin = { identifier: "", password: "" };
+const initialRegister = {
+  fullName: "",
+  phoneNumber: "",
+  whatsappNumber: "",
+  password: "",
+  confirmPassword: "",
+  bgmiUid: "",
+  acceptTerms: false,
+};
 
 const AuthPage = () => {
-  const [form, setForm] = useState(initialForm);
-  const [otpForm, setOtpForm] = useState(initialOtpForm);
-  const [mode, setMode] = useState("login"); // login, register, otp, otp-verify
+  const [loginForm, setLoginForm] = useState(initialLogin);
+  const [registerForm, setRegisterForm] = useState(initialRegister);
+  const [mode, setMode] = useState("login");
+  const [loginMethod, setLoginMethod] = useState("phone");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCountdown, setOtpCountdown] = useState(0);
   const { isAuthenticated, setSession } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const redirectPath = useMemo(
-    () => location.state?.from?.pathname || "/dashboard",
+    () => location.state?.from?.pathname || "/tournaments",
     [location.state]
   );
 
@@ -29,29 +35,35 @@ const AuthPage = () => {
     }
   }, [isAuthenticated, navigate, redirectPath]);
 
-  // OTP Countdown Timer
-  useEffect(() => {
-    if (otpCountdown <= 0) return;
-    const timer = setTimeout(() => setOtpCountdown(otpCountdown - 1), 1000);
-    return () => clearTimeout(timer);
-  }, [otpCountdown]);
+  const handlePhoneChange = (field, value) => {
+    const digits = value.replace(/\D/g, "").slice(0, 10);
+    setRegisterForm((prev) => ({ ...prev, [field]: digits }));
+  };
 
-  const submit = async (event) => {
+  const buildLoginPayload = () => {
+    const identifier = loginForm.identifier.trim();
+    const payload = { password: loginForm.password };
+    if (loginMethod === "email" || identifier.includes("@")) {
+      payload.email = identifier.toLowerCase();
+    } else {
+      payload.phoneNumber = identifier.replace(/\D/g, "").slice(-10);
+    }
+    return payload;
+  };
+
+  const submitLogin = async (event) => {
     event.preventDefault();
+    const payload = buildLoginPayload();
+    if (!payload.email && (!payload.phoneNumber || payload.phoneNumber.length !== 10)) {
+      setMessage(loginMethod === "email" ? "Enter a valid email." : "Enter a valid 10-digit phone number.");
+      return;
+    }
     setLoading(true);
     setMessage("");
     try {
-      if (mode === "login") {
-        const payload = { email: form.email, password: form.password };
-        const data = await api.login(payload);
-        setSession(data);
-        navigate(redirectPath, { replace: true });
-      } else if (mode === "register") {
-        const payload = { username: form.username, email: form.email, password: form.password };
-        const data = await api.register(payload);
-        setSession(data);
-        navigate(redirectPath, { replace: true });
-      }
+      const data = await api.login(payload);
+      setSession(data);
+      navigate(redirectPath, { replace: true });
     } catch (error) {
       setMessage(error.message);
     } finally {
@@ -59,85 +71,29 @@ const AuthPage = () => {
     }
   };
 
-  const handleSendOtp = async (event) => {
+  const submitRegister = async (event) => {
     event.preventDefault();
-    if (!otpForm.email) {
-      setMessage("Please enter your email");
+    if (!registerForm.acceptTerms) {
+      setMessage("You must accept the terms and conditions.");
       return;
     }
-    
+    if (registerForm.phoneNumber.length !== 10) {
+      setMessage("Enter a valid 10-digit phone number.");
+      return;
+    }
     setLoading(true);
     setMessage("");
     try {
-      let response;
-      try {
-        response = await fetch(`${API_BASE_URL}/otp/send-otp`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: otpForm.email }),
-        });
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.log("API URL:", API_BASE_URL);
-        // eslint-disable-next-line no-console
-        console.log("Error:", error);
-        throw new Error(formatFetchError(error, "/otp/send-otp"));
-      }
-
-      // eslint-disable-next-line no-console
-      console.log("Response:", response);
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to send OTP");
-      }
-
-      const data = await response.json();
-      setMessage(data.message);
-      setOtpSent(true);
-      setOtpCountdown(300); // 5 minutes
-      setMode("otp-verify");
-    } catch (error) {
-      setMessage(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async (event) => {
-    event.preventDefault();
-    if (!otpForm.email || !otpForm.otp) {
-      setMessage("Please enter email and OTP");
-      return;
-    }
-    
-    setLoading(true);
-    setMessage("");
-    try {
-      let response;
-      try {
-        response = await fetch(`${API_BASE_URL}/otp/verify-otp`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: otpForm.email, otp: otpForm.otp }),
-        });
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.log("API URL:", API_BASE_URL);
-        // eslint-disable-next-line no-console
-        console.log("Error:", error);
-        throw new Error(formatFetchError(error, "/otp/verify-otp"));
-      }
-
-      // eslint-disable-next-line no-console
-      console.log("Response:", response);
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "OTP verification failed");
-      }
-
-      const data = await response.json();
+      const payload = {
+        fullName: registerForm.fullName.trim(),
+        phoneNumber: registerForm.phoneNumber,
+        whatsappNumber: registerForm.whatsappNumber || registerForm.phoneNumber,
+        password: registerForm.password,
+        confirmPassword: registerForm.confirmPassword,
+        bgmiUid: registerForm.bgmiUid.trim(),
+        acceptTerms: true,
+      };
+      const data = await api.register(payload);
       setSession(data);
       navigate(redirectPath, { replace: true });
     } catch (error) {
@@ -148,152 +104,174 @@ const AuthPage = () => {
   };
 
   return (
-    <main className="page auth">
-      <div className="card auth-card">
-        <h2>
-          {mode === "login" ? "Login" : mode === "register" ? "Register" : "OTP Login"}
-        </h2>
+    <main className="page auth v2-page">
+      <div className="card auth-card v2-auth-card">
+        <h2>{mode === "login" ? "Login" : "Create Account"}</h2>
+        <p className="auth-subtitle">
+          {mode === "login"
+            ? loginMethod === "email"
+              ? "Sign in with your email (legacy account)"
+              : "Sign in with phone number and password"
+            : "Register with phone — no email required"}
+        </p>
         {message && <p className="state-text">{message}</p>}
 
-        {/* Standard Login/Register Form */}
-        {(mode === "login" || mode === "register") && (
-          <form onSubmit={submit}>
-            {mode === "register" && (
+        {mode === "login" ? (
+          <form onSubmit={submitLogin} className="v2-form">
+            <label className="v2-label">
+              {loginMethod === "email" ? "Email" : "Phone Number"}
               <input
                 required
-                placeholder="Username"
-                value={form.username}
-                onChange={(e) => setForm({ ...form, username: e.target.value })}
+                type={loginMethod === "email" ? "email" : "tel"}
+                inputMode={loginMethod === "email" ? "email" : "numeric"}
+                placeholder={loginMethod === "email" ? "you@example.com" : "10-digit mobile number"}
+                value={loginForm.identifier}
+                onChange={(e) => setLoginForm({ ...loginForm, identifier: e.target.value })}
+                disabled={loading}
+                className="v2-input"
+                autoComplete={loginMethod === "email" ? "email" : "tel"}
+              />
+            </label>
+            <label className="v2-label">
+              Password
+              <input
+                required
+                type="password"
+                placeholder="Your password"
+                value={loginForm.password}
+                onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                disabled={loading}
+                className="v2-input"
+                autoComplete="current-password"
+              />
+            </label>
+            <button className="btn btn-primary v2-btn-full" type="submit" disabled={loading}>
+              {loading ? "Signing in..." : "Login"}
+            </button>
+            <button
+              type="button"
+              className="btn btn-tertiary v2-btn-full"
+              onClick={() => {
+                setLoginMethod(loginMethod === "phone" ? "email" : "phone");
+                setLoginForm(initialLogin);
+                setMessage("");
+              }}
+            >
+              {loginMethod === "phone" ? "Login with email instead" : "Login with phone instead"}
+            </button>
+            <p className="auth-forgot">
+              Forgot password?{" "}
+              <a href="https://wa.me/919876543210" target="_blank" rel="noreferrer">
+                Contact Admin
+              </a>
+            </p>
+          </form>
+        ) : (
+          <form onSubmit={submitRegister} className="v2-form">
+            <label className="v2-label">
+              Full Name
+              <input
+                required
+                placeholder="Your full name"
+                value={registerForm.fullName}
+                onChange={(e) => setRegisterForm({ ...registerForm, fullName: e.target.value })}
+                disabled={loading}
+                className="v2-input"
+              />
+            </label>
+            <label className="v2-label">
+              Phone Number
+              <input
+                required
+                type="tel"
+                inputMode="numeric"
+                placeholder="10-digit mobile number"
+                value={registerForm.phoneNumber}
+                onChange={(e) => handlePhoneChange("phoneNumber", e.target.value)}
+                disabled={loading}
+                className="v2-input"
+              />
+            </label>
+            <label className="v2-label">
+              WhatsApp Number
+              <input
+                type="tel"
+                inputMode="numeric"
+                placeholder="Same as phone (default)"
+                value={registerForm.whatsappNumber}
+                onChange={(e) => handlePhoneChange("whatsappNumber", e.target.value)}
+                disabled={loading}
+                className="v2-input"
+              />
+            </label>
+            <label className="v2-label">
+              Password
+              <input
+                required
+                type="password"
+                value={registerForm.password}
+                onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
+                disabled={loading}
+                className="v2-input"
+                autoComplete="new-password"
+              />
+            </label>
+            <label className="v2-label">
+              Confirm Password
+              <input
+                required
+                type="password"
+                value={registerForm.confirmPassword}
+                onChange={(e) =>
+                  setRegisterForm({ ...registerForm, confirmPassword: e.target.value })
+                }
+                disabled={loading}
+                className="v2-input"
+                autoComplete="new-password"
+              />
+            </label>
+            <label className="v2-label">
+              BGMI UID (optional)
+              <input
+                placeholder="Your BGMI UID"
+                value={registerForm.bgmiUid}
+                onChange={(e) => setRegisterForm({ ...registerForm, bgmiUid: e.target.value })}
+                disabled={loading}
+                className="v2-input"
+              />
+            </label>
+            <label className="v2-checkbox">
+              <input
+                type="checkbox"
+                checked={registerForm.acceptTerms}
+                onChange={(e) =>
+                  setRegisterForm({ ...registerForm, acceptTerms: e.target.checked })
+                }
                 disabled={loading}
               />
-            )}
-            <input
-              required
-              type="email"
-              placeholder="Email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              disabled={loading}
-            />
-            <input
-              required
-              type="password"
-              placeholder="Password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              disabled={loading}
-            />
-            <button className="btn btn-primary" type="submit" disabled={loading}>
-              {loading ? "Processing..." : mode === "login" ? "Login" : "Create Account"}
+              <span>
+                I accept the{" "}
+                <Link to="/terms-and-conditions" target="_blank">
+                  Terms & Conditions
+                </Link>
+              </span>
+            </label>
+            <button className="btn btn-primary v2-btn-full" type="submit" disabled={loading}>
+              {loading ? "Creating account..." : "Register"}
             </button>
           </form>
         )}
 
-        {/* OTP Send Form */}
-        {mode === "otp" && !otpSent && (
-          <form onSubmit={handleSendOtp}>
-            <input
-              required
-              type="email"
-              placeholder="Enter your email"
-              value={otpForm.email}
-              onChange={(e) => setOtpForm({ ...otpForm, email: e.target.value })}
-              disabled={loading}
-            />
-            <button className="btn btn-primary" type="submit" disabled={loading}>
-              {loading ? "Sending..." : "Send OTP"}
-            </button>
-          </form>
-        )}
-
-        {/* OTP Verify Form */}
-        {mode === "otp-verify" && (
-          <form onSubmit={handleVerifyOtp}>
-            <input
-              type="email"
-              placeholder="Email"
-              value={otpForm.email}
-              disabled
-              style={{ opacity: 0.7 }}
-            />
-            <input
-              required
-              type="text"
-              placeholder="Enter 6-digit OTP"
-              value={otpForm.otp}
-              onChange={(e) => setOtpForm({ ...otpForm, otp: e.target.value.replace(/\D/g, "").slice(0, 6) })}
-              maxLength="6"
-              disabled={loading}
-            />
-            <button className="btn btn-primary" type="submit" disabled={loading}>
-              {loading ? "Verifying..." : "Verify OTP"}
-            </button>
-            {otpCountdown > 0 && (
-              <p style={{ fontSize: "12px", color: "#999", marginTop: "10px" }}>
-                OTP expires in {Math.floor(otpCountdown / 60)}:{(otpCountdown % 60).toString().padStart(2, "0")}
-              </p>
-            )}
-            {otpCountdown === 0 && otpSent && (
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => {
-                  setOtpSent(false);
-                  setMode("otp");
-                  setOtpForm({ ...otpForm, otp: "" });
-                }}
-              >
-                Request New OTP
-              </button>
-            )}
-          </form>
-        )}
-
-        {/* Mode Switcher Buttons */}
-        {(mode === "login" || mode === "register") && (
-          <>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => {
-                setMode(mode === "login" ? "register" : "login");
-                setMessage("");
-                setForm(initialForm);
-              }}
-            >
-              {mode === "login" ? "Need an account? Register" : "Already have an account? Login"}
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => {
-                setMode("otp");
-                setMessage("");
-                setForm(initialForm);
-                setOtpForm(initialOtpForm);
-                setOtpSent(false);
-              }}
-            >
-              Login with OTP
-            </button>
-          </>
-        )}
-
-        {(mode === "otp" || mode === "otp-verify") && (
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => {
-              setMode("login");
-              setMessage("");
-              setOtpForm(initialOtpForm);
-              setOtpSent(false);
-              setOtpCountdown(0);
-            }}
-          >
-            Back to Password Login
-          </button>
-        )}
+        <button
+          type="button"
+          className="btn btn-secondary v2-btn-full"
+          onClick={() => {
+            setMode(mode === "login" ? "register" : "login");
+            setMessage("");
+          }}
+        >
+          {mode === "login" ? "Need an account? Register" : "Already have an account? Login"}
+        </button>
       </div>
     </main>
   );

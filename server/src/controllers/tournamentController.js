@@ -256,6 +256,14 @@ const createMatch = async (req, res) => {
     matchType,
     map,
     perspective,
+    description,
+    bannerImage,
+    rules,
+    requirements,
+    discordLink,
+    youtubeLink,
+    instagramLink,
+    roomNotes,
   } = req.validated.body;
   const startDate = new Date(startTime);
   const roomReady = Boolean(roomId && roomPassword);
@@ -276,6 +284,14 @@ const createMatch = async (req, res) => {
     roomId: roomId ?? "",
     roomPassword: roomPassword ?? "",
     isRoomVisible: shouldBeVisible,
+    description: description ?? "",
+    bannerImage: bannerImage ?? "",
+    rules: rules ?? "",
+    requirements: requirements ?? "",
+    discordLink: discordLink ?? "",
+    youtubeLink: youtubeLink ?? "",
+    instagramLink: instagramLink ?? "",
+    roomNotes: roomNotes ?? "",
   });
 
   return res.status(201).json(match);

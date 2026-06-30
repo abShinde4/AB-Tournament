@@ -8,6 +8,7 @@ import { PlayerCountBar } from "../components/PlayerCountBar";
 import WalletRechargeModal from "../components/WalletRechargeModal";
 import SquadTeamActions from "../components/squad/SquadTeamActions";
 import SquadTeamCardStats from "../components/squad/SquadTeamCardStats";
+import AnnouncementBanner from "../components/AnnouncementBanner";
 import "../components/squad/squad-team.css";
 
 const formatCountdown = (msLeft) => {
@@ -126,39 +127,113 @@ const TournamentPage = () => {
     const unlockTime = match.roomUnlockTime ? new Date(match.roomUnlockTime).getTime() : null;
     const isUnlocked = match.isRoomPublished && unlockTime && now >= unlockTime;
 
-    return (
-      <article className={`card tournament-card ${match.isRoomPublished && !isUnlocked ? "locked-card" : ""}`} key={match._id}>
-        <div className="match-head">
-          <h3>{match.title}</h3>
-          <span className={`game-badge ${match.game === "BGMI" ? "badge-bgmi" : "badge-ff"}`}>
-            {match.game}
-          </span>
-        </div>
-        <p>Entry Fee: ₹{match.entryFee || 20}</p>
-        <p>Prize Pool: ₹{match.prizePool}</p>
-        <p>Status: {match.status}</p>
-        <p className="countdown-text">
-          Starts in: <strong>{formatCountdown(msLeft)}</strong>
-        </p>
-        {isLiveSoon && !started && <span className="live-badge">LIVE</span>}
+    const playerCount = match.isSquadMatch
+      ? `${match.joinedTeamsCount || 0} / ${match.maxTeams || 25} teams`
+      : `${match.joinedPlayersCount || 0} / ${match.maxPlayers || 100}`;
 
-        <section className="match-details">
-          <h4>Match Details</h4>
-          <div className="match-detail-grid">
-            <div className="match-detail-pill">
-              <span className="match-detail-label">🎮 Type</span>
-              <strong>{match.matchType || "Not Specified"}</strong>
+    const slotsLabel = match.isSquadMatch
+      ? `${match.remainingTeamSlots ?? 0} team slots left`
+      : `${match.remainingSlots ?? 0} slots left`;
+
+    return (
+      <article className={`card tournament-v2-card ${match.isRoomPublished && !isUnlocked ? "locked-card" : ""}`} key={match._id}>
+        {match.bannerImage && (
+          <img src={match.bannerImage} alt="" className="tournament-v2-banner" />
+        )}
+        <div className="tournament-v2-body">
+          <div className="tournament-v2-head">
+            <h3>{match.title}</h3>
+            <span className={`game-badge ${match.game === "BGMI" ? "badge-bgmi" : "badge-ff"}`}>
+              {match.game}
+            </span>
+          </div>
+
+          <div className="tournament-v2-stats">
+            <div className="tournament-v2-stat">
+              <span>Entry Fee</span>
+              <strong>₹{match.entryFee || 20}</strong>
             </div>
-            <div className="match-detail-pill">
-              <span className="match-detail-label">🗺️ Map</span>
-              <strong>{match.map || "Not Specified"}</strong>
+            <div className="tournament-v2-stat">
+              <span>Prize Pool</span>
+              <strong>₹{match.prizePool}</strong>
             </div>
-            <div className="match-detail-pill">
-              <span className="match-detail-label">⚔️ Mode</span>
-              <strong>{match.perspective || "Not Specified"}</strong>
+            <div className="tournament-v2-stat">
+              <span>Players</span>
+              <strong>{playerCount}</strong>
+            </div>
+            <div className="tournament-v2-stat">
+              <span>Remaining</span>
+              <strong>{slotsLabel}</strong>
+            </div>
+            <div className="tournament-v2-stat">
+              <span>Type</span>
+              <strong>{match.matchType || "—"}</strong>
+            </div>
+            <div className="tournament-v2-stat">
+              <span>Status</span>
+              <strong>{match.status}</strong>
             </div>
           </div>
-        </section>
+
+          <div className="tournament-v2-countdown">
+            {started ? (
+              <strong>Match Started</strong>
+            ) : (
+              <>
+                Starts in: <strong>{formatCountdown(msLeft)}</strong>
+              </>
+            )}
+            {isLiveSoon && !started && <span className="live-badge"> LIVE SOON</span>}
+          </div>
+
+          {(match.description || match.rules || match.requirements || match.roomNotes) && (
+            <div className="tournament-v2-description">
+              {match.description?.trim() && (
+                <>
+                  <h4>About</h4>
+                  <p>{match.description}</p>
+                </>
+              )}
+              {match.rules?.trim() && (
+                <>
+                  <h4>Rules</h4>
+                  <p>{match.rules}</p>
+                </>
+              )}
+              {match.requirements?.trim() && (
+                <>
+                  <h4>Requirements</h4>
+                  <p>{match.requirements}</p>
+                </>
+              )}
+              {match.roomNotes?.trim() && (
+                <>
+                  <h4>Room Notes</h4>
+                  <p>{match.roomNotes}</p>
+                </>
+              )}
+              {(match.discordLink || match.youtubeLink || match.instagramLink) && (
+                <div className="tournament-v2-links">
+                  {match.discordLink && <a href={match.discordLink} target="_blank" rel="noreferrer">Discord</a>}
+                  {match.youtubeLink && <a href={match.youtubeLink} target="_blank" rel="noreferrer">YouTube</a>}
+                  {match.instagramLink && <a href={match.instagramLink} target="_blank" rel="noreferrer">Instagram</a>}
+                </div>
+              )}
+            </div>
+          )}
+
+          <section className="match-details">
+            <div className="match-detail-grid">
+              <div className="match-detail-pill">
+                <span className="match-detail-label">Map</span>
+                <strong>{match.map || "—"}</strong>
+              </div>
+              <div className="match-detail-pill">
+                <span className="match-detail-label">Mode</span>
+                <strong>{match.perspective || "—"}</strong>
+              </div>
+            </div>
+          </section>
 
         {match.isRoomPublished && !isUnlocked && (
           <div className="room-section locked">
@@ -299,13 +374,15 @@ const TournamentPage = () => {
         </div>
           </>
         )}
+        </div>
       </article>
     );
   };
 
   return (
-    <main className="page">
-      <h2>Tournaments</h2>
+    <main className="page v2-page">
+      <h2 className="v2-page-title">🏆 Tournaments</h2>
+      <AnnouncementBanner />
       <div className="filter-tabs">
         <button
           type="button"

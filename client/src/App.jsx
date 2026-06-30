@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import "./App.css";
+import "./v2-mobile.css";
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import FlashScreen from "./components/FlashScreen";
@@ -23,7 +24,7 @@ const RefundPolicyPage = lazy(() => import("./pages/RefundPolicyPage"));
 
 
 const AppShell = () => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const [splashDone, setSplashDone] = useState(false);
 
   useEffect(() => {
@@ -47,7 +48,10 @@ const AppShell = () => {
         }
       >
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route
+            path="/"
+            element={isAuthenticated ? <Navigate to="/tournaments" replace /> : <HomePage />}
+          />
           <Route
             path="/tournaments"
             element={
@@ -62,6 +66,14 @@ const AppShell = () => {
             element={
               <ProtectedRoute>
                 <LeaderboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/wallet"
+            element={
+              <ProtectedRoute>
+                <Navigate to="/profile#wallet" replace />
               </ProtectedRoute>
             }
           />
@@ -100,7 +112,7 @@ const AppShell = () => {
           <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />
           <Route path="/refund-policy" element={<RefundPolicyPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to={isAuthenticated ? "/tournaments" : "/"} replace />} />
         </Routes>
       </Suspense>
       <Footer />

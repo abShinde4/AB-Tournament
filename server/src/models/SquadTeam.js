@@ -21,6 +21,7 @@ const squadTeamSchema = new mongoose.Schema(
     leaderBgmiUid: { type: String, required: true, trim: true },
     teamLogo: { type: String, default: "", trim: true },
     teamDescription: { type: String, default: "", trim: true },
+    teamPasswordHash: { type: String, default: null, select: false },
     tournament: { type: mongoose.Schema.Types.ObjectId, ref: "Match", required: true },
     players: { type: [squadPlayerSchema], default: [] },
     paymentStatus: {

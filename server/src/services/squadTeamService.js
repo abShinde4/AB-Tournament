@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
 const Match = require("../models/Match");
 const SquadTeam = require("../models/SquadTeam");
 const Registration = require("../models/Registration");
@@ -34,7 +35,8 @@ const assertSquadMatch = (match) => {
 };
 
 const serializeTeam = (team, match) => {
-  const doc = typeof team.toObject === "function" ? team.toObject() : team;
+  const doc = typeof team.toObject === "function" ? team.toObject() : { ...team };
+  delete doc.teamPasswordHash;
   const status = getTeamStatusBadge(doc, match);
   return {
     ...doc,
@@ -63,6 +65,7 @@ const createSquadTeam = async ({
   userId,
   tournamentId,
   teamName,
+  teamPassword,
   leaderBgmiUid,
   leaderWhatsapp,
   teamLogo,
@@ -105,9 +108,10 @@ const createSquadTeam = async ({
       if (!user) throw createHttpError("User not found.", 401);
 
       if (user.walletBalance < match.entryFee || user.virtualFunds < match.entryFee) {
-        throw createHttpError("Insufficient Wallet Balance");
+        throw createHttpError("Please add wallet balance before creating a squad.", 402);
       }
 
+      const teamPasswordHash = await bcrypt.hash(teamPassword, 10);
       await debitWalletAndVirtualFunds({ userId, amountInr: match.entryFee, session });
 
       const generatedTeamId = await generateTeamId(session);
@@ -117,6 +121,7 @@ const createSquadTeam = async ({
           {
             teamName: teamName.trim(),
             teamId: generatedTeamId,
+            teamPasswordHash,
             leaderUser: userId,
             leaderName: user.username,
             leaderWhatsapp: leaderWhatsapp.trim(),
@@ -189,7 +194,6 @@ const createSquadTeam = async ({
       result = {
         team: serializeTeam(team, match),
         walletBalance: updatedUser.walletBalance,
-        inviteMessage: buildInviteMessage(team, match),
       };
     });
     return result;
@@ -198,14 +202,24 @@ const createSquadTeam = async ({
   }
 };
 
-const joinSquadTeam = async ({ userId, teamId, bgmiUid, tournamentId }) => {
+const joinSquadTeam = async ({ userId, teamId, teamPassword, bgmiUid, tournamentId }) => {
   const session = await mongoose.startSession();
   try {
     let result;
     await session.withTransaction(async () => {
       const normalizedTeamId = teamId.trim().toUpperCase();
-      const team = await SquadTeam.findOne({ teamId: normalizedTeamId }).session(session);
+      const team = await SquadTeam.findOne({ teamId: normalizedTeamId })
+        .select("+teamPasswordHash")
+        .session(session);
       if (!team) throw createHttpError("Invalid Team ID.", 404);
+
+      if (!team.teamPasswordHash) {
+        throw createHttpError("This team cannot accept new members. Contact admin.");
+      }
+      const passwordMatch = await bcrypt.compare(teamPassword, team.teamPasswordHash);
+      if (!passwordMatch) {
+        throw createHttpError("Invalid team password.");
+      }
 
       if (tournamentId && String(team.tournament) !== String(tournamentId)) {
         throw createHttpError("Team ID does not belong to this tournament.");

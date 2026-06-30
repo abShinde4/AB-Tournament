@@ -4,8 +4,9 @@ const createTeamBodySchema = z.object({
   body: z.object({
     tournamentId: z.string().min(1),
     teamName: z.string().trim().min(2).max(40),
+    teamPassword: z.string().trim().min(4).max(32),
     leaderBgmiUid: z.string().trim().min(5).max(20),
-    leaderWhatsapp: z.string().trim().min(10).max(15),
+    leaderWhatsapp: z.string().trim().regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit WhatsApp number"),
     teamLogo: z.string().trim().max(500).optional(),
     teamDescription: z.string().trim().max(200).optional().or(z.literal("")),
   }),
@@ -14,6 +15,7 @@ const createTeamBodySchema = z.object({
 const joinTeamBodySchema = z.object({
   body: z.object({
     teamId: z.string().trim().min(1),
+    teamPassword: z.string().trim().min(4).max(32),
     bgmiUid: z.string().trim().min(5).max(20),
     tournamentId: z.string().min(1).optional(),
   }),

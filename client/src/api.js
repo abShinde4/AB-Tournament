@@ -137,6 +137,12 @@ export const api = {
   rejectMatchJoinRequest: (id, payload = {}) =>
     request(`/admin/match-join-reject/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
   refreshMe: () => request("/auth/me"),
+  getActiveAnnouncements: () => request("/announcements/active"),
+  createAnnouncement: (payload) =>
+    request("/announcements", { method: "POST", body: JSON.stringify(payload) }),
+  deactivateAnnouncement: (id) =>
+    request(`/announcements/${id}/deactivate`, { method: "PATCH" }),
+  getAdminAnnouncements: () => request("/announcements"),
   createMatch: (payload) =>
     request("/tournaments", { method: "POST", body: JSON.stringify(payload) }),
   updateMatch: (matchId, payload) =>

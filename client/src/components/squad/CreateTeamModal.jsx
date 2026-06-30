@@ -1,7 +1,6 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { api } from "../../api";
-import SquadTeamInvite from "./SquadTeamInvite";
 import "./squad-team.css";
 
 const CreateTeamModal = ({ isOpen, match, user, onClose, onSuccess }) => {
@@ -9,10 +8,9 @@ const CreateTeamModal = ({ isOpen, match, user, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     teamName: "",
+    teamPassword: "",
     leaderBgmiUid: user?.bgmiUid || "",
-    leaderWhatsapp: "",
-    teamLogo: "",
-    teamDescription: "",
+    leaderWhatsapp: user?.whatsappNumber || user?.phoneNumber || "",
   });
   const [result, setResult] = useState(null);
 
@@ -22,13 +20,18 @@ const CreateTeamModal = ({ isOpen, match, user, onClose, onSuccess }) => {
   const walletBalance = user?.walletBalance ?? 0;
 
   const handleChange = (e) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleContinue = (e) => {
     e.preventDefault();
-    if (!form.teamName.trim() || !form.leaderBgmiUid.trim() || !form.leaderWhatsapp.trim()) {
+    if (!form.teamName.trim() || !form.teamPassword.trim() || !form.leaderBgmiUid.trim() || !form.leaderWhatsapp.trim()) {
       toast.error("Please fill all required fields.");
+      return;
+    }
+    if (form.teamPassword.length < 4) {
+      toast.error("Team password must be at least 4 characters.");
       return;
     }
     setStep("payment");
@@ -36,7 +39,7 @@ const CreateTeamModal = ({ isOpen, match, user, onClose, onSuccess }) => {
 
   const handlePayAndCreate = async () => {
     if (walletBalance < entryFee) {
-      toast.error("Insufficient Wallet Balance");
+      toast.error("Please add wallet balance before creating a squad.");
       return;
     }
     setLoading(true);
@@ -44,10 +47,9 @@ const CreateTeamModal = ({ isOpen, match, user, onClose, onSuccess }) => {
       const res = await api.createTeam({
         tournamentId: match._id,
         teamName: form.teamName.trim(),
+        teamPassword: form.teamPassword,
         leaderBgmiUid: form.leaderBgmiUid.trim(),
         leaderWhatsapp: form.leaderWhatsapp.trim(),
-        teamLogo: form.teamLogo.trim(),
-        teamDescription: form.teamDescription.trim(),
       });
       setResult(res);
       toast.success(`Team created! ID: ${res.team?.teamId}`);
@@ -69,7 +71,7 @@ const CreateTeamModal = ({ isOpen, match, user, onClose, onSuccess }) => {
   return (
     <div className="squad-modal-backdrop" onClick={handleClose}>
       <div className="squad-modal" onClick={(e) => e.stopPropagation()}>
-        <h3>👑 Create Squad Team</h3>
+        <h3>Create Squad Team</h3>
 
         {step === "form" && (
           <form onSubmit={handleContinue}>
@@ -78,8 +80,15 @@ const CreateTeamModal = ({ isOpen, match, user, onClose, onSuccess }) => {
               <input name="teamName" value={form.teamName} onChange={handleChange} required />
             </div>
             <div className="form-group">
-              <label>Team Leader Name</label>
-              <input value={user?.username || ""} disabled />
+              <label>Team Password *</label>
+              <input
+                name="teamPassword"
+                type="password"
+                value={form.teamPassword}
+                onChange={handleChange}
+                placeholder="Share with teammates to join"
+                required
+              />
             </div>
             <div className="form-group">
               <label>BGMI UID *</label>
@@ -87,15 +96,14 @@ const CreateTeamModal = ({ isOpen, match, user, onClose, onSuccess }) => {
             </div>
             <div className="form-group">
               <label>WhatsApp Number *</label>
-              <input name="leaderWhatsapp" value={form.leaderWhatsapp} onChange={handleChange} required />
-            </div>
-            <div className="form-group">
-              <label>Team Logo URL (optional)</label>
-              <input name="teamLogo" value={form.teamLogo} onChange={handleChange} placeholder="https://..." />
-            </div>
-            <div className="form-group">
-              <label>Team Description (optional)</label>
-              <textarea name="teamDescription" value={form.teamDescription} onChange={handleChange} rows={3} />
+              <input
+                name="leaderWhatsapp"
+                value={form.leaderWhatsapp}
+                onChange={handleChange}
+                inputMode="numeric"
+                placeholder="10-digit number"
+                required
+              />
             </div>
             <div className="squad-modal-actions">
               <button type="button" className="btn btn-secondary" onClick={handleClose}>Cancel</button>
@@ -108,7 +116,7 @@ const CreateTeamModal = ({ isOpen, match, user, onClose, onSuccess }) => {
           <div>
             <p>Entry Fee: <strong>₹{entryFee}</strong></p>
             <p>Wallet Balance: <strong>₹{walletBalance}</strong></p>
-            <p>Only the team leader pays the full squad entry fee.</p>
+            <p className="v2-muted">Only the team leader pays the squad entry fee.</p>
             <div className="squad-modal-actions">
               <button type="button" className="btn btn-secondary" onClick={() => setStep("form")}>Back</button>
               <button type="button" className="btn btn-primary" disabled={loading} onClick={handlePayAndCreate}>
@@ -122,7 +130,7 @@ const CreateTeamModal = ({ isOpen, match, user, onClose, onSuccess }) => {
           <div>
             <p><strong>Team ID:</strong> {result.team?.teamId}</p>
             <p><strong>Team Name:</strong> {result.team?.teamName}</p>
-            <SquadTeamInvite inviteMessage={result.inviteMessage} teamId={result.team?.teamId} />
+            <p className="v2-muted">Share Team ID and password with your squad members.</p>
             <div className="squad-modal-actions">
               <button type="button" className="btn btn-primary" onClick={handleClose}>Done</button>
             </div>

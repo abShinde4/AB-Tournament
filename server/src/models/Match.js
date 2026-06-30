@@ -37,6 +37,14 @@ const matchSchema = new mongoose.Schema(
     isRoomPublished: { type: Boolean, default: false },
     isRoomVisible: { type: Boolean, default: false },
     resultsPublished: { type: Boolean, default: false },
+    description: { type: String, default: "", trim: true },
+    bannerImage: { type: String, default: "", trim: true },
+    rules: { type: String, default: "", trim: true },
+    requirements: { type: String, default: "", trim: true },
+    discordLink: { type: String, default: "", trim: true },
+    youtubeLink: { type: String, default: "", trim: true },
+    instagramLink: { type: String, default: "", trim: true },
+    roomNotes: { type: String, default: "", trim: true },
   },
   { timestamps: true }
 );

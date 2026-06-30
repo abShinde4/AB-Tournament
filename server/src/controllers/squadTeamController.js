@@ -15,12 +15,13 @@ const sendError = (res, error) => {
 
 const createTeam = async (req, res) => {
   try {
-    const { tournamentId, teamName, leaderBgmiUid, leaderWhatsapp, teamLogo, teamDescription } =
+    const { tournamentId, teamName, teamPassword, leaderBgmiUid, leaderWhatsapp, teamLogo, teamDescription } =
       req.validated.body;
     const result = await createSquadTeam({
       userId: req.user._id,
       tournamentId,
       teamName,
+      teamPassword,
       leaderBgmiUid,
       leaderWhatsapp,
       teamLogo,
@@ -37,10 +38,11 @@ const createTeam = async (req, res) => {
 
 const joinTeam = async (req, res) => {
   try {
-    const { teamId, bgmiUid, tournamentId } = req.validated.body;
+    const { teamId, teamPassword, bgmiUid, tournamentId } = req.validated.body;
     const result = await joinSquadTeam({
       userId: req.user._id,
       teamId,
+      teamPassword,
       bgmiUid,
       tournamentId,
     });

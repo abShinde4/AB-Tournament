@@ -14,7 +14,33 @@ const nonEmptyUrl = z.preprocess((value) => {
   return value;
 }, z.string().trim().url());
 
+const phoneNumberSchema = z
+  .string()
+  .trim()
+  .regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit phone number");
+
 const registerSchema = z.object({
+  body: z
+    .object({
+      fullName: z.string().trim().min(2).max(60),
+      phoneNumber: phoneNumberSchema,
+      whatsappNumber: phoneNumberSchema.optional(),
+      password: z.string().min(6).max(64),
+      confirmPassword: z.string().min(6).max(64),
+      bgmiUid: z.string().trim().max(20).optional().or(z.literal("")),
+      acceptTerms: z.literal(true, {
+        errorMap: () => ({ message: "You must accept the terms and conditions." }),
+      }),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: "Passwords do not match.",
+      path: ["confirmPassword"],
+    }),
+  params: z.object({}).optional(),
+  query: z.object({}).optional(),
+});
+
+const registerLegacySchema = z.object({
   body: z.object({
     username: z.string().trim().min(3).max(24),
     email: z.string().email().transform((value) => value.toLowerCase()),
@@ -26,7 +52,8 @@ const registerSchema = z.object({
 
 const loginSchema = z.object({
   body: z.object({
-    email: z.string().email().transform((value) => value.toLowerCase()),
+    phoneNumber: phoneNumberSchema.optional(),
+    email: z.string().email().transform((value) => value.toLowerCase()).optional(),
     password: z.string().min(6).max(64),
   }),
   params: z.object({}).optional(),
@@ -47,6 +74,14 @@ const createMatchSchema = z.object({
     maxPlayers: z.number().int().min(2).max(500).default(100),
     roomId: z.string().trim().max(60).optional(),
     roomPassword: z.string().trim().max(60).optional(),
+    description: z.string().trim().max(5000).optional(),
+    bannerImage: z.string().trim().max(500).optional(),
+    rules: z.string().trim().max(5000).optional(),
+    requirements: z.string().trim().max(5000).optional(),
+    discordLink: z.string().trim().max(300).optional(),
+    youtubeLink: z.string().trim().max(300).optional(),
+    instagramLink: z.string().trim().max(300).optional(),
+    roomNotes: z.string().trim().max(2000).optional(),
   }),
   params: z.object({}).optional(),
   query: z.object({}).optional(),
@@ -67,6 +102,14 @@ const updateMatchSchema = z.object({
     roomId: z.string().trim().max(60).optional(),
     roomPassword: z.string().trim().max(60).optional(),
     isRoomVisible: z.boolean().optional(),
+    description: z.string().trim().max(5000).optional(),
+    bannerImage: z.string().trim().max(500).optional(),
+    rules: z.string().trim().max(5000).optional(),
+    requirements: z.string().trim().max(5000).optional(),
+    discordLink: z.string().trim().max(300).optional(),
+    youtubeLink: z.string().trim().max(300).optional(),
+    instagramLink: z.string().trim().max(300).optional(),
+    roomNotes: z.string().trim().max(2000).optional(),
   }),
   params: z.object({ matchId: objectId }),
   query: z.object({}).optional(),
@@ -150,6 +193,9 @@ const updateProfileSchema = z.object({
   body: z.object({
     username: z.string().trim().min(3).max(24).optional(),
     email: z.string().email().transform((value) => value.toLowerCase()).optional(),
+    fullName: z.string().trim().min(2).max(60).optional(),
+    phoneNumber: phoneNumberSchema.optional(),
+    whatsappNumber: phoneNumberSchema.optional(),
     bgmiName: z.string().trim().max(32).optional(),
     bgmiUid: z.string().trim().max(32).optional(),
     freeFireName: z.string().trim().max(32).optional(),
@@ -269,6 +315,7 @@ const userIdParamSchema = z.object({
 
 module.exports = {
   registerSchema,
+  registerLegacySchema,
   loginSchema,
   createMatchSchema,
   updateMatchSchema,

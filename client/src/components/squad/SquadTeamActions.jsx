@@ -1,12 +1,11 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { Link } from "react-router-dom";
 import CreateTeamModal from "./CreateTeamModal";
 import JoinTeamModal from "./JoinTeamModal";
 import EditTeamModal from "./EditTeamModal";
 import ManageTeamPanel from "./ManageTeamPanel";
-import SquadTeamInvite from "./SquadTeamInvite";
 import SquadTeamLockedBanner from "./SquadTeamLockedBanner";
-import WalletRechargeModal from "../WalletRechargeModal";
 import "./squad-team.css";
 
 const SquadTeamActions = ({
@@ -19,7 +18,7 @@ const SquadTeamActions = ({
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
-  const [walletModal, setWalletModal] = useState({ open: false, amount: 100 });
+  const [showInsufficient, setShowInsufficient] = useState(false);
 
   const team = match.mySquadTeam;
   const entryFee = match.entryFee || 20;
@@ -37,7 +36,7 @@ const SquadTeamActions = ({
       return;
     }
     if (walletBalance < entryFee) {
-      setWalletModal({ open: true, amount: Math.max(entryFee - walletBalance, entryFee) });
+      setShowInsufficient(true);
       return;
     }
     setShowCreate(true);
@@ -60,15 +59,12 @@ const SquadTeamActions = ({
       {isLocked && hasTeam && <SquadTeamLockedBanner />}
 
       {hasTeam ? (
-        <>
-          <ManageTeamPanel
-            team={team}
-            currentUserId={user?._id}
-            onUpdate={() => onRefresh?.()}
-            onEdit={() => setShowEdit(true)}
-          />
-          <SquadTeamInvite teamId={team.teamId} />
-        </>
+        <ManageTeamPanel
+          team={team}
+          currentUserId={user?._id}
+          onUpdate={() => onRefresh?.()}
+          onEdit={() => setShowEdit(true)}
+        />
       ) : (
         <div className="squad-team-actions">
           <button
@@ -77,7 +73,7 @@ const SquadTeamActions = ({
             disabled={isLocked || slotsLeft === 0}
             onClick={openCreateFlow}
           >
-            {slotsLeft === 0 ? "No Team Slots Left" : "👑 Create Team"}
+            {slotsLeft === 0 ? "No Team Slots Left" : "Create Team"}
           </button>
           <button
             type="button"
@@ -85,8 +81,25 @@ const SquadTeamActions = ({
             disabled={isLocked}
             onClick={openJoinFlow}
           >
-            Join Existing Team
+            Join Team
           </button>
+        </div>
+      )}
+
+      {showInsufficient && (
+        <div className="squad-modal-backdrop" onClick={() => setShowInsufficient(false)}>
+          <div className="squad-modal squad-insufficient-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Insufficient Balance</h3>
+            <p>Please add wallet balance before creating a squad.</p>
+            <div className="squad-modal-actions">
+              <button type="button" className="btn btn-secondary" onClick={() => setShowInsufficient(false)}>
+                Close
+              </button>
+              <Link to="/profile#wallet" className="btn btn-primary" onClick={() => setShowInsufficient(false)}>
+                Add Money
+              </Link>
+            </div>
+          </div>
         </div>
       )}
 
@@ -108,12 +121,6 @@ const SquadTeamActions = ({
         team={team}
         onClose={() => setShowEdit(false)}
         onSuccess={() => onRefresh?.()}
-      />
-      <WalletRechargeModal
-        isOpen={walletModal.open}
-        suggestedAmount={walletModal.amount}
-        title={`Add ₹${walletModal.amount} to Wallet`}
-        onClose={() => setWalletModal({ open: false, amount: 100 })}
       />
     </>
   );
