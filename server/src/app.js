@@ -6,7 +6,6 @@ const morgan = require("morgan");
 const rateLimit = require("express-rate-limit");
 
 const authRoutes = require("./routes/authRoutes");
-const otpRoutes = require("./routes/otpRoutes");
 const tournamentRoutes = require("./routes/tournamentRoutes");
 const resultRoutes = require("./routes/resultRoutes");
 const walletRoutes = require("./routes/walletRoutes");
@@ -18,6 +17,7 @@ const userRoutes = require("./routes/userRoutes");
 const highlightRoutes = require("./routes/highlightRoutes");
 const squadTeamRoutes = require("./routes/squadTeamRoutes");
 const announcementRoutes = require("./routes/announcementRoutes");
+const gamerLicenseRoutes = require("./routes/gamerLicenseRoutes");
 const Notification = require("./models/Notification");
 
 const app = express();
@@ -97,7 +97,6 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.use("/api/auth", authLimiter, authRoutes);
-app.use("/api/otp", authLimiter, otpRoutes);
 app.use("/api/tournaments", tournamentRoutes);
 app.use("/api/matches", tournamentRoutes);
 app.use("/api/results", resultRoutes);
@@ -110,6 +109,7 @@ app.use("/api/user", userRoutes);
 app.use("/api/highlights", highlightRoutes);
 app.use("/api/squad-teams", squadTeamRoutes);
 app.use("/api/announcements", announcementRoutes);
+app.use("/api/licenses", gamerLicenseRoutes);
 
 const ensureSampleNotifications = async () => {
   try {

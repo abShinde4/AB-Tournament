@@ -264,6 +264,10 @@ const createMatch = async (req, res) => {
     youtubeLink,
     instagramLink,
     roomNotes,
+    prizeDetails,
+    thumbnailImage,
+    whatsappLink,
+    streamLink,
   } = req.validated.body;
   const startDate = new Date(startTime);
   const roomReady = Boolean(roomId && roomPassword);
@@ -292,6 +296,10 @@ const createMatch = async (req, res) => {
     youtubeLink: youtubeLink ?? "",
     instagramLink: instagramLink ?? "",
     roomNotes: roomNotes ?? "",
+    prizeDetails: prizeDetails ?? "",
+    thumbnailImage: thumbnailImage ?? "",
+    whatsappLink: whatsappLink ?? "",
+    streamLink: streamLink ?? "",
   });
 
   return res.status(201).json(match);

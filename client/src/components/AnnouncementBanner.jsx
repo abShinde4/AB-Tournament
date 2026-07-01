@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { api } from "../api";
+import "./announcement.css";
 
 const DISMISS_KEY = "ab_dismissed_announcements";
 
@@ -47,20 +48,35 @@ const AnnouncementBanner = () => {
   return (
     <div className="announcement-stack">
       {visible.map((item) => (
-        <div key={item._id} className={`announcement-banner ${priorityClass(item.priority)}`}>
-          <div className="announcement-content">
-            <strong>{item.title}</strong>
-            <p>{item.message}</p>
+        <article key={item._id} className={`announcement-card ${priorityClass(item.priority)}`}>
+          {item.imageUrl && (
+            <img src={item.imageUrl} alt="" className="announcement-card-image" loading="lazy" />
+          )}
+          <div className="announcement-card-body">
+            <div className="announcement-card-top">
+              <strong>{item.title}</strong>
+              <button
+                type="button"
+                className="announcement-dismiss"
+                aria-label="Dismiss announcement"
+                onClick={() => handleDismiss(item._id)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <p>{item.description || item.message}</p>
+            {item.buttonText && item.buttonLink && (
+              <a
+                href={item.buttonLink}
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-secondary announcement-card-btn"
+              >
+                {item.buttonText}
+              </a>
+            )}
           </div>
-          <button
-            type="button"
-            className="announcement-dismiss"
-            aria-label="Dismiss announcement"
-            onClick={() => handleDismiss(item._id)}
-          >
-            <X size={18} />
-          </button>
-        </div>
+        </article>
       ))}
     </div>
   );

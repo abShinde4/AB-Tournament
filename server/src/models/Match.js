@@ -45,6 +45,10 @@ const matchSchema = new mongoose.Schema(
     youtubeLink: { type: String, default: "", trim: true },
     instagramLink: { type: String, default: "", trim: true },
     roomNotes: { type: String, default: "", trim: true },
+    prizeDetails: { type: String, default: "", trim: true },
+    thumbnailImage: { type: String, default: "", trim: true },
+    whatsappLink: { type: String, default: "", trim: true },
+    streamLink: { type: String, default: "", trim: true },
   },
   { timestamps: true }
 );

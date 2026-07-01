@@ -4,12 +4,52 @@ const User = require("../models/User");
 const Result = require("../models/Result");
 const Transaction = require("../models/Transaction");
 const WithdrawRequest = require("../models/WithdrawRequest");
+const bcrypt = require("bcryptjs");
 const {
   listTournamentPaymentsAdmin,
   approveTournamentPayment,
   rejectTournamentPayment,
 } = require("../controllers/paymentController");
 const mongoose = require("mongoose");
+const { normalizePhone } = require("../utils/phoneUtils");
+
+const legacyPhoneFilter = {
+  $or: [{ phoneNumber: { $exists: false } }, { phoneNumber: null }, { phoneNumber: "" }],
+};
+
+const listLegacyUsers = async (req, res) => {
+  const page = Math.max(Number(req.query.page) || 1, 1);
+  const limit = Math.min(Math.max(Number(req.query.limit) || 15, 1), 50);
+  const skip = (page - 1) * limit;
+  const search = (req.query.search || "").trim();
+
+  const filter = { ...legacyPhoneFilter };
+  if (search) {
+    const normalizedPhone = search.replace(/\D/g, "").slice(-10);
+    filter.$and = [
+      legacyPhoneFilter,
+      {
+        $or: [
+          { username: { $regex: search, $options: "i" } },
+          { email: { $regex: search, $options: "i" } },
+          { fullName: { $regex: search, $options: "i" } },
+          ...(normalizedPhone.length === 10 ? [{ phoneNumber: normalizedPhone }] : []),
+        ],
+      },
+    ];
+    delete filter.$or;
+  }
+
+  const [users, total] = await Promise.all([
+    User.find(filter, "-password").sort({ createdAt: -1 }).skip(skip).limit(limit),
+    User.countDocuments(filter),
+  ]);
+
+  return res.json({
+    data: users,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  });
+};
 
 const listUsers = async (req, res) => {
   const page = Math.max(Number(req.query.page) || 1, 1);
@@ -19,10 +59,15 @@ const listUsers = async (req, res) => {
 
   const filter = {};
   if (search) {
+    const normalizedPhone = search.replace(/\D/g, "").slice(-10);
     filter.$or = [
       { username: { $regex: search, $options: "i" } },
       { email: { $regex: search, $options: "i" } },
+      { fullName: { $regex: search, $options: "i" } },
     ];
+    if (normalizedPhone.length === 10) {
+      filter.$or.push({ phoneNumber: normalizedPhone });
+    }
   }
 
   const [users, total] = await Promise.all([
@@ -289,8 +334,97 @@ const publishRoom = async (req, res) => {
   }
 };
 
+const assignUserPhone = async (req, res) => {
+  try {
+    const { userId } = req.validated.params;
+    const { phoneNumber } = req.validated.body;
+    const normalizedPhone = normalizePhone(phoneNumber);
+
+    const taken = await User.findOne({
+      phoneNumber: normalizedPhone,
+      _id: { $ne: userId },
+    });
+    if (taken) {
+      return res.status(409).json({ message: "Phone number already assigned to another user." });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      {
+        phoneNumber: normalizedPhone,
+        phoneVerified: true,
+        isVerified: true,
+      },
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    return res.json({ message: "Phone number assigned successfully.", user });
+  } catch (error) {
+    return res.status(500).json({ message: error.message || "Failed to assign phone number." });
+  }
+};
+
+const resetUserPassword = async (req, res) => {
+  try {
+    const { userId } = req.validated.params;
+    const { password } = req.validated.body;
+
+    const target = await User.findById(userId).select("role _id");
+    if (!target) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    const hashed = await bcrypt.hash(password, 10);
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { password: hashed },
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    return res.json({ message: "Password reset successfully.", user });
+  } catch (error) {
+    return res.status(500).json({ message: error.message || "Failed to reset password." });
+  }
+};
+
+const deactivateUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (String(userId) === String(req.user._id)) {
+      return res.status(400).json({ message: "You cannot deactivate your own account." });
+    }
+
+    const target = await User.findById(userId).select("role");
+    if (!target) {
+      return res.status(404).json({ message: "User not found." });
+    }
+    if (target.role === "admin") {
+      return res.status(400).json({ message: "Admin accounts cannot be deactivated." });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { isActive: false },
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    return res.json({ message: "User deactivated.", user });
+  } catch (error) {
+    return res.status(500).json({ message: error.message || "Failed to deactivate user." });
+  }
+};
+
 module.exports = {
   listUsers,
+  listLegacyUsers,
+  assignUserPhone,
+  resetUserPassword,
+  deactivateUser,
   listRegistrations,
   walletOverview,
   dashboardStats,

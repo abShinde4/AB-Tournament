@@ -4,7 +4,9 @@ const app = require("./app");
 const connectDb = require("./config/db");
 const User = require("./models/User");
 const { ensureAdminUser } = require("./bootstrap/adminUser");
+const { runUserAuthMigration } = require("./bootstrap/userAuthMigration");
 const { syncPaymentRequestIndexes } = require("./bootstrap/paymentRequestIndexes");
+const { syncLicenseConfig } = require("./bootstrap/licenseConfig");
 const { startRoomVisibilityJob } = require("./jobs/roomVisibilityJob");
 const { initializeEmailService } = require("./utils/emailService");
 const { ensureUploadsDir } = require("./middleware/optionalScreenshotUpload");
@@ -87,6 +89,8 @@ const startServer = async () => {
 
     await connectDb();
     await syncPaymentRequestIndexes();
+    await syncLicenseConfig();
+    await runUserAuthMigration();
     ensureUploadsDir();
     await resetLegacyWalletBalances();
     await ensureAdminUser();

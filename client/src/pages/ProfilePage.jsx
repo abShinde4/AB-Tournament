@@ -4,8 +4,10 @@ import { api } from "../api";
 import AddMoneyModal from "../components/AddMoneyModal";
 import WithdrawModal from "../components/WithdrawModal";
 import Skeleton from "../components/Skeleton";
+import GamerLicenseCard from "../components/license/GamerLicenseCard";
 import { useAuth } from "../context/useAuth";
 import { buildAvatarUrl } from "../utils/avatarUrl";
+import "../components/license/license.css";
 
 const HistoryList = ({ items, emptyText, renderItem }) => (
   <div className="v2-list">
@@ -48,6 +50,10 @@ const ProfilePage = () => {
   const [walletRequests, setWalletRequests] = useState([]);
   const [matchPayments, setMatchPayments] = useState([]);
   const [matchJoinRequests, setMatchJoinRequests] = useState([]);
+  const [licenseEligibility, setLicenseEligibility] = useState(null);
+  const [myLicense, setMyLicense] = useState(null);
+  const [claimLoading, setClaimLoading] = useState(false);
+  const [showLicenseFullscreen, setShowLicenseFullscreen] = useState(false);
 
   const memberSince = useMemo(() => {
     if (!user?.createdAt) return "N/A";
@@ -60,16 +66,17 @@ const ProfilePage = () => {
   );
 
   const loadAll = async () => {
-    const [dashboardRes, txRes, withdrawalsRes, walletRequestsRes, matchPaymentsRes, joinRequestsRes, meRes] =
+    const [dashboardRes, txRes, withdrawalsRes, walletRequestsRes, matchPaymentsRes, joinRequestsRes, meRes, licenseRes] =
       await Promise.all([
-        api.getDashboard(),
-        api.getTransactions("limit=30"),
-        api.getWithdrawals("limit=30"),
-        api.getMyWalletPaymentRequests(),
-        api.getMyTournamentPayments(),
-        api.getMyMatchJoinRequests(),
-        api.refreshMe(),
-      ]);
+      api.getDashboard(),
+      api.getTransactions("limit=30"),
+      api.getWithdrawals("limit=30"),
+      api.getMyWalletPaymentRequests(),
+      api.getMyTournamentPayments(),
+      api.getMyMatchJoinRequests(),
+      api.refreshMe(),
+      api.getLicenseEligibility(),
+    ]);
 
     setWalletBalance(meRes.user?.walletBalance ?? dashboardRes.walletBalance ?? 0);
     setStats({
@@ -86,6 +93,8 @@ const ProfilePage = () => {
     setWalletRequests(walletRequestsRes.data || []);
     setMatchPayments(matchPaymentsRes.data || []);
     setMatchJoinRequests(joinRequestsRes.data || []);
+    setLicenseEligibility(licenseRes);
+    setMyLicense(licenseRes.hasLicense ? licenseRes.license : null);
     setUser((prev) => ({
       ...prev,
       ...meRes.user,
@@ -180,6 +189,25 @@ const ProfilePage = () => {
       return;
     }
     setSelectedFile(file);
+  };
+
+  const handleClaimLicense = async () => {
+    setClaimLoading(true);
+    try {
+      const res = await api.claimLicense();
+      setMyLicense(res.license);
+      setLicenseEligibility((prev) => ({
+        ...prev,
+        hasLicense: true,
+        eligible: false,
+        license: res.license,
+      }));
+      toast.success("Verified Gamer License claimed!");
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setClaimLoading(false);
+    }
   };
 
   const onUpload = async () => {
@@ -277,6 +305,37 @@ const ProfilePage = () => {
           <span>Losses</span>
         </div>
       </div>
+
+      <section className="card v2-section">
+        <h3>Verified Gamer License</h3>
+        {myLicense && myLicense.status === "active" ? (
+          <GamerLicenseCard
+            license={myLicense}
+            onFullscreen={() => setShowLicenseFullscreen(true)}
+          />
+        ) : licenseEligibility?.eligible ? (
+          <>
+            {licenseEligibility.claimType === "founding" && (
+              <p className="v2-muted">
+                Founding Season 1 slot available — claim your license now.
+              </p>
+            )}
+            <button
+              type="button"
+              className="btn btn-primary v2-btn-full"
+              disabled={claimLoading}
+              onClick={handleClaimLicense}
+            >
+              {claimLoading ? "Claiming..." : "Claim License"}
+            </button>
+          </>
+        ) : (
+          <p className="v2-muted">
+            {licenseEligibility?.message ||
+              `You need ${licenseEligibility?.remainingMatches ?? "—"} more approved match(es).`}
+          </p>
+        )}
+      </section>
 
       <section id="wallet" ref={walletRef} className="card v2-section v2-wallet-balance">
         <h3>Wallet Balance</h3>
@@ -512,6 +571,26 @@ const ProfilePage = () => {
         }}
         existingPending={withdrawals.filter((w) => w.status === "pending")}
       />
+
+      {showLicenseFullscreen && myLicense && (
+        <div className="license-fullscreen-backdrop" onClick={() => setShowLicenseFullscreen(false)}>
+          <div className="license-fullscreen-panel card" onClick={(e) => e.stopPropagation()}>
+            <GamerLicenseCard
+              license={myLicense}
+              showActions
+              onFullscreen={() => setShowLicenseFullscreen(false)}
+            />
+            <button
+              type="button"
+              className="btn btn-secondary v2-btn-full"
+              style={{ marginTop: "0.75rem" }}
+              onClick={() => setShowLicenseFullscreen(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 };

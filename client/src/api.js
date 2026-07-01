@@ -19,15 +19,12 @@ const request = async (endpoint, options = {}) => {
       headers,
     });
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.log("API URL:", API_BASE_URL);
-    // eslint-disable-next-line no-console
-    console.log("Error:", error);
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.error("API request failed:", API_BASE_URL, endpoint, error);
+    }
     throw new Error(formatFetchError(error, endpoint));
   }
-
-  // eslint-disable-next-line no-console
-  console.log("Response:", response);
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -101,6 +98,19 @@ export const api = {
     request("/notifications/send", { method: "POST", body: JSON.stringify(payload) }),
   getAdminStats: () => request("/admin/stats"),
   getAdminUsers: (params = "") => request(`/admin/users${params ? `?${params}` : ""}`),
+  getAdminLegacyUsers: (params = "") => request(`/admin/legacy-users${params ? `?${params}` : ""}`),
+  assignUserPhone: (userId, phoneNumber) =>
+    request(`/admin/users/${userId}/phone`, {
+      method: "PATCH",
+      body: JSON.stringify({ phoneNumber }),
+    }),
+  resetUserPassword: (userId, password) =>
+    request(`/admin/users/${userId}/reset-password`, {
+      method: "PATCH",
+      body: JSON.stringify({ password }),
+    }),
+  deactivateUser: (userId) =>
+    request(`/admin/users/${userId}/deactivate`, { method: "PATCH" }),
   getAdminRegistrations: (params = "") =>
     request(`/admin/registrations${params ? `?${params}` : ""}`),
   verifyAdminPlayer: (registrationId, payload = {}) =>
@@ -143,6 +153,22 @@ export const api = {
   deactivateAnnouncement: (id) =>
     request(`/announcements/${id}/deactivate`, { method: "PATCH" }),
   getAdminAnnouncements: () => request("/announcements"),
+  getLicenseEligibility: () => request("/licenses/eligibility"),
+  getMyLicense: () => request("/licenses/me"),
+  claimLicense: () => request("/licenses/claim", { method: "POST" }),
+  verifyLicense: (licenseId, token) => {
+    if (licenseId) return request(`/licenses/verify/${encodeURIComponent(licenseId)}`);
+    return request(`/licenses/verify?token=${encodeURIComponent(token)}`);
+  },
+  getAdminLicenses: (params = "") => request(`/licenses/admin/list${params ? `?${params}` : ""}`),
+  searchAdminLicenseUsers: (q) => request(`/licenses/admin/search-users?q=${encodeURIComponent(q)}`),
+  getAdminLicenseConfig: () => request("/licenses/admin/config"),
+  updateAdminLicenseConfig: (payload) =>
+    request("/licenses/admin/config", { method: "PATCH", body: JSON.stringify(payload) }),
+  adminIssueLicense: (payload) =>
+    request("/licenses/admin/issue", { method: "POST", body: JSON.stringify(payload) }),
+  adminUpdateLicense: (id, payload) =>
+    request(`/licenses/admin/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
   createMatch: (payload) =>
     request("/tournaments", { method: "POST", body: JSON.stringify(payload) }),
   updateMatch: (matchId, payload) =>

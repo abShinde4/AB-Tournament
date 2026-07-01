@@ -2,11 +2,49 @@ const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const { normalizePhone } = require("../utils/phoneUtils");
 
+const hasValidPhone = (phoneNumber) => /^[6-9]\d{9}$/.test(String(phoneNumber || ""));
+
+const syncAdminPassword = async (adminUser, adminPassword) => {
+  const matches = await bcrypt.compare(adminPassword, adminUser.password);
+  if (matches) return false;
+
+  adminUser.password = await bcrypt.hash(adminPassword, 10);
+  await adminUser.save();
+  // eslint-disable-next-line no-console
+  console.log("Admin password hash synced from ADMIN_PASSWORD.");
+  return true;
+};
+
+const attachAdminPhone = async (adminUser, adminPhone) => {
+  if (hasValidPhone(adminUser.phoneNumber)) return false;
+
+  const phoneTaken = await User.findOne({
+    phoneNumber: adminPhone,
+    _id: { $ne: adminUser._id },
+  });
+  if (phoneTaken) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `ADMIN_PHONE (${adminPhone}) is already used by another account. Assign a unique phone to the admin user manually.`
+    );
+    return false;
+  }
+
+  adminUser.phoneNumber = adminPhone;
+  adminUser.phoneVerified = true;
+  adminUser.isVerified = true;
+  adminUser.isActive = true;
+  await adminUser.save();
+  // eslint-disable-next-line no-console
+  console.log(`Assigned ADMIN_PHONE to admin (${adminUser.username}).`);
+  return true;
+};
+
 const ensureAdminUser = async () => {
   const adminPassword = process.env.ADMIN_PASSWORD?.trim();
   const adminUsername = process.env.ADMIN_USERNAME?.trim() || "admin";
   const adminName = process.env.ADMIN_NAME?.trim() || adminUsername;
-  const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase().trim();
+  const legacyAdminEmail = process.env.ADMIN_EMAIL?.toLowerCase().trim();
   const adminPhone = process.env.ADMIN_PHONE ? normalizePhone(process.env.ADMIN_PHONE) : null;
 
   if (!adminPassword) {
@@ -15,49 +53,34 @@ const ensureAdminUser = async () => {
     return;
   }
 
-  const existingAdmin = await User.findOne({ role: "admin" });
-  if (existingAdmin) {
+  let adminUser =
+    (await User.findOne({ role: "admin" })) ||
+    (legacyAdminEmail ? await User.findOne({ email: legacyAdminEmail }) : null) ||
+    (adminPhone ? await User.findOne({ phoneNumber: adminPhone }) : null) ||
+    (await User.findOne({ username: adminUsername }));
+
+  if (adminUser) {
+    let changed = false;
+    if (adminUser.role !== "admin") {
+      adminUser.role = "admin";
+      changed = true;
+    }
+    if (adminPhone) {
+      changed = (await attachAdminPhone(adminUser, adminPhone)) || changed;
+    } else if (!hasValidPhone(adminUser.phoneNumber)) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        "Admin account has no phone number. Set ADMIN_PHONE in .env so admin can sign in."
+      );
+    }
+    changed = (await syncAdminPassword(adminUser, adminPassword)) || changed;
+    if (changed) {
+      await adminUser.save();
+    }
     // eslint-disable-next-line no-console
     console.log(
-      `Admin account already exists (${existingAdmin.email || existingAdmin.phoneNumber || existingAdmin.username}). Skipping bootstrap.`
+      `Admin account ready (${adminUser.phoneNumber || adminUser.username || legacyAdminEmail || "admin"}).`
     );
-    return;
-  }
-
-  if (adminEmail) {
-    const byEmail = await User.findOne({ email: adminEmail });
-    if (byEmail) {
-      if (byEmail.role !== "admin") {
-        byEmail.role = "admin";
-        await byEmail.save();
-      }
-      // eslint-disable-next-line no-console
-      console.log(`Existing user promoted to admin: ${adminEmail}`);
-      return;
-    }
-  }
-
-  if (adminPhone) {
-    const byPhone = await User.findOne({ phoneNumber: adminPhone });
-    if (byPhone) {
-      if (byPhone.role !== "admin") {
-        byPhone.role = "admin";
-        await byPhone.save();
-      }
-      // eslint-disable-next-line no-console
-      console.log(`Existing user promoted to admin: ${adminPhone}`);
-      return;
-    }
-  }
-
-  const byUsername = await User.findOne({ username: adminUsername });
-  if (byUsername) {
-    if (byUsername.role !== "admin") {
-      byUsername.role = "admin";
-      await byUsername.save();
-    }
-    // eslint-disable-next-line no-console
-    console.log(`Existing user promoted to admin: ${adminUsername}`);
     return;
   }
 
@@ -68,18 +91,16 @@ const ensureAdminUser = async () => {
     password: hashedPassword,
     role: "admin",
     isVerified: true,
-    emailVerified: true,
+    phoneVerified: Boolean(adminPhone),
+    isActive: true,
   };
 
-  if (adminEmail) userData.email = adminEmail;
-  if (adminPhone) {
-    userData.phoneNumber = adminPhone;
-    userData.whatsappNumber = adminPhone;
-  }
+  if (legacyAdminEmail) userData.email = legacyAdminEmail;
+  if (adminPhone) userData.phoneNumber = adminPhone;
 
   await User.create(userData);
   // eslint-disable-next-line no-console
-  console.log(`Admin account created: ${adminEmail || adminPhone || adminUsername}`);
+  console.log(`Admin account created: ${adminPhone || adminUsername}`);
 };
 
 module.exports = { ensureAdminUser };

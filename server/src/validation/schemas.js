@@ -24,10 +24,10 @@ const registerSchema = z.object({
     .object({
       fullName: z.string().trim().min(2).max(60),
       phoneNumber: phoneNumberSchema,
-      whatsappNumber: phoneNumberSchema.optional(),
       password: z.string().min(6).max(64),
       confirmPassword: z.string().min(6).max(64),
       bgmiUid: z.string().trim().max(20).optional().or(z.literal("")),
+      freeFireUid: z.string().trim().max(20).optional().or(z.literal("")),
       acceptTerms: z.literal(true, {
         errorMap: () => ({ message: "You must accept the terms and conditions." }),
       }),
@@ -40,20 +40,9 @@ const registerSchema = z.object({
   query: z.object({}).optional(),
 });
 
-const registerLegacySchema = z.object({
-  body: z.object({
-    username: z.string().trim().min(3).max(24),
-    email: z.string().email().transform((value) => value.toLowerCase()),
-    password: z.string().min(6).max(64),
-  }),
-  params: z.object({}).optional(),
-  query: z.object({}).optional(),
-});
-
 const loginSchema = z.object({
   body: z.object({
-    phoneNumber: phoneNumberSchema.optional(),
-    email: z.string().email().transform((value) => value.toLowerCase()).optional(),
+    phoneNumber: phoneNumberSchema,
     password: z.string().min(6).max(64),
   }),
   params: z.object({}).optional(),
@@ -82,6 +71,10 @@ const createMatchSchema = z.object({
     youtubeLink: z.string().trim().max(300).optional(),
     instagramLink: z.string().trim().max(300).optional(),
     roomNotes: z.string().trim().max(2000).optional(),
+    prizeDetails: z.string().trim().max(5000).optional(),
+    thumbnailImage: z.string().trim().max(500).optional(),
+    whatsappLink: z.string().trim().max(300).optional(),
+    streamLink: z.string().trim().max(300).optional(),
   }),
   params: z.object({}).optional(),
   query: z.object({}).optional(),
@@ -110,6 +103,10 @@ const updateMatchSchema = z.object({
     youtubeLink: z.string().trim().max(300).optional(),
     instagramLink: z.string().trim().max(300).optional(),
     roomNotes: z.string().trim().max(2000).optional(),
+    prizeDetails: z.string().trim().max(5000).optional(),
+    thumbnailImage: z.string().trim().max(500).optional(),
+    whatsappLink: z.string().trim().max(300).optional(),
+    streamLink: z.string().trim().max(300).optional(),
   }),
   params: z.object({ matchId: objectId }),
   query: z.object({}).optional(),
@@ -192,16 +189,29 @@ const withdrawIdParamSchema = z.object({
 const updateProfileSchema = z.object({
   body: z.object({
     username: z.string().trim().min(3).max(24).optional(),
-    email: z.string().email().transform((value) => value.toLowerCase()).optional(),
     fullName: z.string().trim().min(2).max(60).optional(),
-    phoneNumber: phoneNumberSchema.optional(),
-    whatsappNumber: phoneNumberSchema.optional(),
     bgmiName: z.string().trim().max(32).optional(),
     bgmiUid: z.string().trim().max(32).optional(),
     freeFireName: z.string().trim().max(32).optional(),
     freeFireUid: z.string().trim().max(32).optional(),
   }),
   params: z.object({}).optional(),
+  query: z.object({}).optional(),
+});
+
+const adminResetPasswordSchema = z.object({
+  body: z.object({
+    password: z.string().min(6).max(64),
+  }),
+  params: z.object({ userId: objectId }),
+  query: z.object({}).optional(),
+});
+
+const adminAssignPhoneSchema = z.object({
+  body: z.object({
+    phoneNumber: phoneNumberSchema,
+  }),
+  params: z.object({ userId: objectId }),
   query: z.object({}).optional(),
 });
 
@@ -315,7 +325,6 @@ const userIdParamSchema = z.object({
 
 module.exports = {
   registerSchema,
-  registerLegacySchema,
   loginSchema,
   createMatchSchema,
   updateMatchSchema,
@@ -328,6 +337,8 @@ module.exports = {
   withdrawSchema,
   withdrawIdParamSchema,
   updateProfileSchema,
+  adminResetPasswordSchema,
+  adminAssignPhoneSchema,
   adminPublishResultsSchema,
   publishRoomSchema,
   verifyPlayerSchema,

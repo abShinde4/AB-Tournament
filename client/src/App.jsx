@@ -17,6 +17,7 @@ const LeaderboardPage = lazy(() => import("./pages/LeaderboardPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const ResultPage = lazy(() => import("./pages/ResultPage"));
+const VerifyLicensePage = lazy(() => import("./pages/VerifyLicensePage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
 const TermsAndConditionsPage = lazy(() => import("./pages/TermsAndConditionsPage"));
@@ -61,6 +62,8 @@ const AppShell = () => {
             }
           />
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/verify" element={<VerifyLicensePage />} />
+          <Route path="/verify/:licenseId" element={<VerifyLicensePage />} />
           <Route
             path="/leaderboard"
             element={

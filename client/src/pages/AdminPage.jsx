@@ -6,6 +6,8 @@ import AdminResultTable from "../components/AdminResultTable";
 import AdminRoomPublisher from "../components/AdminRoomPublisher";
 import HighlightForm from "../components/HighlightForm";
 import SquadTeamsSection from "../components/admin/SquadTeamsSection";
+import AdminLicenseSection from "../components/admin/AdminLicenseSection";
+import LegacyUserMigration from "../components/admin/LegacyUserMigration";
 
 const initialMatch = {
   title: "",
@@ -26,6 +28,10 @@ const initialMatch = {
   youtubeLink: "",
   instagramLink: "",
   roomNotes: "",
+  prizeDetails: "",
+  thumbnailImage: "",
+  whatsappLink: "",
+  streamLink: "",
 };
 
 const AdminPage = () => {
@@ -58,7 +64,13 @@ const AdminPage = () => {
   const [announcementForm, setAnnouncementForm] = useState({
     title: "",
     message: "",
+    description: "",
     priority: "normal",
+    startDate: "",
+    endDate: "",
+    imageUrl: "",
+    buttonText: "",
+    buttonLink: "",
   });
   const [announcements, setAnnouncements] = useState([]);
 
@@ -161,6 +173,10 @@ const AdminPage = () => {
       youtubeLink: match.youtubeLink || "",
       instagramLink: match.instagramLink || "",
       roomNotes: match.roomNotes || "",
+      prizeDetails: match.prizeDetails || "",
+      thumbnailImage: match.thumbnailImage || "",
+      whatsappLink: match.whatsappLink || "",
+      streamLink: match.streamLink || "",
     });
     setEditingMatchId(match._id);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -411,7 +427,7 @@ const AdminPage = () => {
       <main className="page">
         <section className="card">
           <h2>Admin Panel</h2>
-          <p className="state-text">Access denied. Register/login with admin email.</p>
+          <p className="state-text">Access denied. Sign in with an admin account.</p>
         </section>
       </main>
     );
@@ -471,6 +487,10 @@ const AdminPage = () => {
           <input placeholder="YouTube link (optional)" value={matchForm.youtubeLink} onChange={(e) => setMatchForm({ ...matchForm, youtubeLink: e.target.value })} />
           <input placeholder="Instagram link (optional)" value={matchForm.instagramLink} onChange={(e) => setMatchForm({ ...matchForm, instagramLink: e.target.value })} />
           <textarea placeholder="Room notes" value={matchForm.roomNotes} onChange={(e) => setMatchForm({ ...matchForm, roomNotes: e.target.value })} rows={2} />
+          <textarea placeholder="Prize details" value={matchForm.prizeDetails} onChange={(e) => setMatchForm({ ...matchForm, prizeDetails: e.target.value })} rows={2} />
+          <input placeholder="Thumbnail image URL" value={matchForm.thumbnailImage} onChange={(e) => setMatchForm({ ...matchForm, thumbnailImage: e.target.value })} />
+          <input placeholder="WhatsApp link" value={matchForm.whatsappLink} onChange={(e) => setMatchForm({ ...matchForm, whatsappLink: e.target.value })} />
+          <input placeholder="Stream link" value={matchForm.streamLink} onChange={(e) => setMatchForm({ ...matchForm, streamLink: e.target.value })} />
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
             <button className="btn btn-primary" type="submit">
               {editingMatchId ? "Update Tournament" : "Create"}
@@ -491,9 +511,29 @@ const AdminPage = () => {
           onSubmit={async (event) => {
             event.preventDefault();
             try {
-              await api.createAnnouncement(announcementForm);
+              const payload = {
+                ...announcementForm,
+                description: announcementForm.description || announcementForm.message,
+                startDate: announcementForm.startDate
+                  ? new Date(announcementForm.startDate).toISOString()
+                  : undefined,
+                endDate: announcementForm.endDate
+                  ? new Date(announcementForm.endDate).toISOString()
+                  : undefined,
+              };
+              await api.createAnnouncement(payload);
               toast.success("Announcement published");
-              setAnnouncementForm({ title: "", message: "", priority: "normal" });
+              setAnnouncementForm({
+                title: "",
+                message: "",
+                description: "",
+                priority: "normal",
+                startDate: "",
+                endDate: "",
+                imageUrl: "",
+                buttonText: "",
+                buttonLink: "",
+              });
               load();
             } catch (error) {
               toast.error(error.message);
@@ -505,6 +545,12 @@ const AdminPage = () => {
             value={announcementForm.title}
             onChange={(e) => setAnnouncementForm({ ...announcementForm, title: e.target.value })}
             required
+          />
+          <textarea
+            placeholder="Description"
+            value={announcementForm.description}
+            onChange={(e) => setAnnouncementForm({ ...announcementForm, description: e.target.value })}
+            rows={3}
           />
           <textarea
             placeholder="Message"
@@ -521,6 +567,33 @@ const AdminPage = () => {
             <option value="important">Important</option>
             <option value="urgent">Urgent</option>
           </select>
+          <input
+            type="datetime-local"
+            placeholder="Start date"
+            value={announcementForm.startDate}
+            onChange={(e) => setAnnouncementForm({ ...announcementForm, startDate: e.target.value })}
+          />
+          <input
+            type="datetime-local"
+            placeholder="End date"
+            value={announcementForm.endDate}
+            onChange={(e) => setAnnouncementForm({ ...announcementForm, endDate: e.target.value })}
+          />
+          <input
+            placeholder="Image URL (optional)"
+            value={announcementForm.imageUrl}
+            onChange={(e) => setAnnouncementForm({ ...announcementForm, imageUrl: e.target.value })}
+          />
+          <input
+            placeholder="Button text (optional)"
+            value={announcementForm.buttonText}
+            onChange={(e) => setAnnouncementForm({ ...announcementForm, buttonText: e.target.value })}
+          />
+          <input
+            placeholder="Button link (optional)"
+            value={announcementForm.buttonLink}
+            onChange={(e) => setAnnouncementForm({ ...announcementForm, buttonLink: e.target.value })}
+          />
           <button className="btn btn-primary" type="submit">Publish Announcement</button>
         </form>
         {announcements.length > 0 && (
@@ -768,17 +841,9 @@ const AdminPage = () => {
         </div>
       </section>
 
+      <LegacyUserMigration />
+
       <section className="grid two-col">
-        <article className="card">
-          <h3>Users</h3>
-          <ul className="list">
-            {users.map((u) => (
-              <li key={u._id}>
-                {u.username} - {u.email}
-              </li>
-            ))}
-          </ul>
-        </article>
         <article className="card">
           <h3>Registrations</h3>
           <div className="table-wrap">
@@ -1080,6 +1145,8 @@ const AdminPage = () => {
           </table>
         </div>
       </section>
+
+      <AdminLicenseSection />
 
       <SquadTeamsSection matches={matches} />
     </main>

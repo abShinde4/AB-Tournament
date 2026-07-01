@@ -1,6 +1,10 @@
 const express = require("express");
 const {
   listUsers,
+  listLegacyUsers,
+  assignUserPhone,
+  resetUserPassword,
+  deactivateUser,
   listRegistrations,
   walletOverview,
   dashboardStats,
@@ -27,12 +31,37 @@ const {
   adminPublishResultsSchema,
   publishRoomSchema,
   verifyPlayerSchema,
+  adminAssignPhoneSchema,
+  adminResetPasswordSchema,
+  userIdParamSchema,
 } = require("../validation/schemas");
 
 const router = express.Router();
 
 router.get("/stats", protect, requireAdmin, dashboardStats);
 router.get("/users", protect, requireAdmin, listUsers);
+router.get("/legacy-users", protect, requireAdmin, listLegacyUsers);
+router.patch(
+  "/users/:userId/phone",
+  protect,
+  requireAdmin,
+  validate(adminAssignPhoneSchema),
+  assignUserPhone
+);
+router.patch(
+  "/users/:userId/reset-password",
+  protect,
+  requireAdmin,
+  validate(adminResetPasswordSchema),
+  resetUserPassword
+);
+router.patch(
+  "/users/:userId/deactivate",
+  protect,
+  requireAdmin,
+  validate(userIdParamSchema),
+  deactivateUser
+);
 router.get("/registrations", protect, requireAdmin, listRegistrations);
 router.get("/wallet-overview", protect, requireAdmin, walletOverview);
 router.get("/withdraw-requests", protect, requireAdmin, listWithdrawRequests);

@@ -11,6 +11,7 @@ const userSchema = new mongoose.Schema(
     },
     fullName: { type: String, default: "", trim: true, maxlength: 60 },
     phoneNumber: { type: String, trim: true, unique: true, sparse: true },
+    phoneVerified: { type: Boolean, default: false },
     whatsappNumber: { type: String, default: "", trim: true },
     email: {
       type: String,
@@ -43,6 +44,7 @@ const userSchema = new mongoose.Schema(
       enum: ["user", "admin"],
       default: "user",
     },
+    isActive: { type: Boolean, default: true },
     // Used to allow/deny withdrawals (security requirement).
     // Default is true to avoid blocking existing users in dev.
     emailVerified: { type: Boolean, default: false },
@@ -61,5 +63,7 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+userSchema.index({ username: 1 }, { unique: true });
 
 module.exports = mongoose.model("User", userSchema);

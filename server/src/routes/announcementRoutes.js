@@ -16,7 +16,13 @@ const createAnnouncementSchema = z.object({
   body: z.object({
     title: z.string().trim().min(2).max(120),
     message: z.string().trim().min(2).max(2000),
+    description: z.string().trim().max(2000).optional(),
     priority: z.enum(["normal", "important", "urgent"]).optional(),
+    startDate: z.string().datetime().optional().nullable(),
+    endDate: z.string().datetime().optional().nullable(),
+    imageUrl: z.string().trim().max(500).optional(),
+    buttonText: z.string().trim().max(40).optional(),
+    buttonLink: z.string().trim().max(500).optional(),
   }),
 });
 

@@ -138,7 +138,10 @@ const TournamentPage = () => {
     return (
       <article className={`card tournament-v2-card ${match.isRoomPublished && !isUnlocked ? "locked-card" : ""}`} key={match._id}>
         {match.bannerImage && (
-          <img src={match.bannerImage} alt="" className="tournament-v2-banner" />
+          <img src={match.bannerImage} alt="" className="tournament-v2-banner" loading="lazy" />
+        )}
+        {!match.bannerImage && match.thumbnailImage && (
+          <img src={match.thumbnailImage} alt="" className="tournament-v2-banner" loading="lazy" />
         )}
         <div className="tournament-v2-body">
           <div className="tournament-v2-head">
@@ -186,12 +189,18 @@ const TournamentPage = () => {
             {isLiveSoon && !started && <span className="live-badge"> LIVE SOON</span>}
           </div>
 
-          {(match.description || match.rules || match.requirements || match.roomNotes) && (
+          {(match.description || match.rules || match.requirements || match.prizeDetails || match.roomNotes) && (
             <div className="tournament-v2-description">
               {match.description?.trim() && (
                 <>
                   <h4>About</h4>
                   <p>{match.description}</p>
+                </>
+              )}
+              {match.prizeDetails?.trim() && (
+                <>
+                  <h4>Prize Details</h4>
+                  <p>{match.prizeDetails}</p>
                 </>
               )}
               {match.rules?.trim() && (
@@ -212,9 +221,11 @@ const TournamentPage = () => {
                   <p>{match.roomNotes}</p>
                 </>
               )}
-              {(match.discordLink || match.youtubeLink || match.instagramLink) && (
+              {(match.discordLink || match.youtubeLink || match.instagramLink || match.whatsappLink || match.streamLink) && (
                 <div className="tournament-v2-links">
                   {match.discordLink && <a href={match.discordLink} target="_blank" rel="noreferrer">Discord</a>}
+                  {match.whatsappLink && <a href={match.whatsappLink} target="_blank" rel="noreferrer">WhatsApp</a>}
+                  {match.streamLink && <a href={match.streamLink} target="_blank" rel="noreferrer">Stream</a>}
                   {match.youtubeLink && <a href={match.youtubeLink} target="_blank" rel="noreferrer">YouTube</a>}
                   {match.instagramLink && <a href={match.instagramLink} target="_blank" rel="noreferrer">Instagram</a>}
                 </div>

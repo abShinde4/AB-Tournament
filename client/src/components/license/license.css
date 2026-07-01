@@ -1,0 +1,177 @@
+.gamer-license-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  width: 100%;
+}
+
+.license-founding-badge {
+  text-align: center;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.18), rgba(168, 85, 247, 0.18));
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  color: #fde68a;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.license-card-inner {
+  border: 2px solid rgba(110, 231, 183, 0.35);
+  border-radius: 16px;
+  padding: 1rem;
+  background: linear-gradient(160deg, rgba(12, 16, 32, 0.95), rgba(20, 24, 48, 0.92));
+}
+
+.license-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.license-brand {
+  display: block;
+  font-size: 0.72rem;
+  color: #8b94b8;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.license-card-body {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.license-label {
+  display: block;
+  font-size: 0.72rem;
+  color: #8b94b8;
+  margin-bottom: 0.1rem;
+}
+
+.license-meta-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.license-qr-wrap {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.license-qr {
+  width: 112px;
+  height: 112px;
+  margin: 0 auto;
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.35rem;
+}
+
+.license-qr-caption {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: #8b94b8;
+}
+
+.license-admin-image-wrap {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(120, 130, 180, 0.25);
+}
+
+.license-admin-image {
+  width: 100%;
+  display: block;
+  max-height: 420px;
+  object-fit: contain;
+  background: #0a0d18;
+}
+
+.license-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+.license-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 44px;
+  font-size: 0.85rem;
+}
+
+.gamer-license-card.compact .license-card-inner {
+  padding: 0.85rem;
+}
+
+.license-fullscreen-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(4, 6, 14, 0.92);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.license-fullscreen-panel {
+  width: min(480px, 100%);
+  max-height: 92vh;
+  overflow-y: auto;
+}
+
+.verify-page-card {
+  text-align: center;
+}
+
+.verify-page-card.valid {
+  border-color: rgba(110, 231, 183, 0.45);
+}
+
+.verify-page-card.invalid {
+  border-color: rgba(248, 113, 113, 0.45);
+}
+
+.verify-result-grid {
+  display: grid;
+  gap: 0.65rem;
+  text-align: left;
+  margin-top: 1rem;
+}
+
+@media (max-width: 360px) {
+  .license-meta-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .license-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .license-fullscreen-panel,
+  .license-fullscreen-panel * {
+    visibility: visible;
+  }
+
+  .license-fullscreen-panel {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+  }
+
+  .license-actions {
+    display: none;
+  }
+}

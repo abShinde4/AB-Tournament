@@ -158,10 +158,10 @@ const withdraw = async (req, res) => {
 
   try {
     await session.withTransaction(async () => {
-      const user = await User.findById(userId).session(session).select("walletBalance emailVerified");
+      const user = await User.findById(userId).session(session).select("walletBalance phoneVerified");
 
-      if (user?.emailVerified === false && process.env.NODE_ENV === "production") {
-        throw new Error("Email not verified.");
+      if (user?.phoneVerified === false && process.env.NODE_ENV === "production") {
+        throw new Error("Phone number not verified. Contact admin if you need help.");
       }
 
       const existingPending = await WithdrawRequest.findOne({
