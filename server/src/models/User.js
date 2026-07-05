@@ -7,6 +7,12 @@ const normalizeEmail = (value) => {
   return trimmed ? trimmed.toLowerCase() : undefined;
 };
 
+const normalizeOptionalString = (value) => {
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : undefined;
+};
+
 const userSchema = new mongoose.Schema(
   {
     username: {
@@ -16,7 +22,7 @@ const userSchema = new mongoose.Schema(
       minlength: 3,
       maxlength: 24,
     },
-    fullName: { type: String, default: "", trim: true, maxlength: 60 },
+    fullName: { type: String, required: true, trim: true, maxlength: 60 },
     phoneNumber: {
       type: String,
       trim: true,
@@ -67,9 +73,9 @@ const userSchema = new mongoose.Schema(
     otpAttempts: { type: Number, default: 0 },
     // Gaming identity verification
     bgmiName: { type: String, default: "", trim: true },
-    bgmiUid: { type: String, default: "", trim: true },
+    bgmiUid: { type: String, default: "", trim: true, set: normalizeOptionalString },
     freeFireName: { type: String, default: "", trim: true },
-    freeFireUid: { type: String, default: "", trim: true },
+    freeFireUid: { type: String, default: "", trim: true, set: normalizeOptionalString },
   },
   { timestamps: true }
 );
@@ -81,7 +87,9 @@ userSchema.pre("save", async function normalizeEmailBeforeSave() {
 });
 
 userSchema.index({ username: 1 }, { unique: true });
-userSchema.index({ phoneNumber: 1 }, { unique: true, sparse: true });
-userSchema.index({ email: 1 }, { unique: true, sparse: true });
+userSchema.index({ phoneNumber: 1 }, { unique: true, sparse: true, name: "phoneNumber_1" });
+userSchema.index({ email: 1 }, { unique: true, sparse: true, name: "email_1" });
+userSchema.index({ bgmiUid: 1 }, { unique: true, sparse: true, name: "bgmiUid_1" });
+userSchema.index({ freeFireUid: 1 }, { unique: true, sparse: true, name: "freeFireUid_1" });
 
 module.exports = mongoose.model("User", userSchema);

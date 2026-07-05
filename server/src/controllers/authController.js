@@ -49,7 +49,7 @@ const generateUsername = async (fullName, phone) => {
 
 const register = async (req, res) => {
   try {
-    const { fullName, phoneNumber, phone, password, bgmiUid, freeFireUid, email } = req.validated.body;
+    const { fullName, phoneNumber, phone, password, bgmiUid, freeFireUid } = req.validated.body;
     const normalizedPhone = normalizePhone(phoneNumber || phone);
 
     if (!normalizedPhone) {
@@ -61,7 +61,6 @@ const register = async (req, res) => {
       return res.status(409).json({ message: "Phone number already registered." });
     }
 
-    const normalizedEmail = typeof email === "string" && email.trim() ? email.trim().toLowerCase() : null;
     const hashed = await bcrypt.hash(password, 10);
     const username = await generateUsername(fullName, normalizedPhone);
     const adminPhone = process.env.ADMIN_PHONE ? normalizePhone(process.env.ADMIN_PHONE) : null;
@@ -72,7 +71,6 @@ const register = async (req, res) => {
       fullName: fullName.trim(),
       phoneNumber: normalizedPhone,
       password: hashed,
-      ...(normalizedEmail ? { email: normalizedEmail } : {}),
       bgmiUid: bgmiUid?.trim() || "",
       freeFireUid: freeFireUid?.trim() || "",
       role,
@@ -98,24 +96,21 @@ const register = async (req, res) => {
       return res.status(409).json({ message: "An account with these details already exists." });
     }
     // eslint-disable-next-line no-console
-    console.error("Registration error:", error);
+    console.error("Registration failed", {
+      phoneNumber: req.validated?.body?.phoneNumber || req.validated?.body?.phone || null,
+      error: error.message,
+      stack: error.stack,
+    });
     return res.status(500).json({ message: "Registration failed.", error: error.message });
   }
 };
 
 const login = async (req, res) => {
   try {
-    const { phoneNumber, phone, password, email } = req.validated.body;
+    const { phoneNumber, phone, password } = req.validated.body;
     const normalizedPhone = normalizePhone(phoneNumber || phone);
-    const normalizedEmail = typeof email === "string" && email.trim() ? email.trim().toLowerCase() : null;
 
-    let user = null;
-    if (normalizedPhone) {
-      user = await User.findOne({ phoneNumber: normalizedPhone });
-    }
-    if (!user && normalizedEmail) {
-      user = await User.findOne({ email: normalizedEmail });
-    }
+    const user = normalizedPhone ? await User.findOne({ phoneNumber: normalizedPhone }) : null;
     if (!user) {
       return res.status(401).json({
         message:
@@ -138,7 +133,11 @@ const login = async (req, res) => {
     });
   } catch (error) {
     // eslint-disable-next-line no-console
-    console.error("Login error:", error);
+    console.error("Login failed", {
+      phoneNumber: req.validated?.body?.phoneNumber || req.validated?.body?.phone || null,
+      error: error.message,
+      stack: error.stack,
+    });
     return res.status(500).json({ message: "Login failed.", error: error.message });
   }
 };

@@ -51,11 +51,17 @@ const ensureAuthIndexes = async () => {
   try {
     await User.collection.dropIndex("email_1").catch(() => {});
     await User.collection.dropIndex("phoneNumber_1").catch(() => {});
+    await User.collection.dropIndex("bgmiUid_1").catch(() => {});
+    await User.collection.dropIndex("freeFireUid_1").catch(() => {});
     await User.collection.createIndex({ phoneNumber: 1 }, { unique: true, sparse: true, name: "phoneNumber_1" });
     await User.collection.createIndex({ email: 1 }, { unique: true, sparse: true, name: "email_1" });
+    await User.collection.createIndex({ bgmiUid: 1 }, { unique: true, sparse: true, name: "bgmiUid_1" });
+    await User.collection.createIndex({ freeFireUid: 1 }, { unique: true, sparse: true, name: "freeFireUid_1" });
     await User.updateMany({ $or: [{ email: null }, { email: "" }, { email: { $exists: false } }] }, { $unset: { email: "" } });
+    await User.updateMany({ $or: [{ bgmiUid: null }, { bgmiUid: "" }, { bgmiUid: { $exists: false } }] }, { $unset: { bgmiUid: "" } });
+    await User.updateMany({ $or: [{ freeFireUid: null }, { freeFireUid: "" }, { freeFireUid: { $exists: false } }] }, { $unset: { freeFireUid: "" } });
     // eslint-disable-next-line no-console
-    console.log("Auth indexes ensured for phone/email uniqueness.");
+    console.log("Auth indexes ensured for phone/email/game-id uniqueness.");
   } catch (error) {
     // eslint-disable-next-line no-console
     console.warn("Auth index refresh skipped:", error.message || error);

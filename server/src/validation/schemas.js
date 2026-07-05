@@ -27,7 +27,6 @@ const registerSchema = z.object({
       fullName: z.string().trim().min(2).max(60),
       phoneNumber: phoneNumberSchema.optional(),
       phone: phoneNumberSchema.optional(),
-      email: z.string().trim().email().optional().or(z.literal("")),
       password: z.string().min(6).max(64),
       confirmPassword: z.string().min(6).max(64),
       bgmiUid: z.string().trim().max(20).optional().or(z.literal("")),
@@ -58,15 +57,14 @@ const loginSchema = z.object({
     .object({
       phoneNumber: phoneNumberSchema.optional(),
       phone: phoneNumberSchema.optional(),
-      email: z.string().trim().email().optional().or(z.literal("")),
       password: z.string().min(6).max(64),
     })
     .superRefine((data, ctx) => {
-      if (!data.phoneNumber && !data.phone && !data.email) {
+      if (!data.phoneNumber && !data.phone) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["phoneNumber"],
-          message: "Phone number or email is required.",
+          message: "Phone number is required.",
         });
       }
     }),
