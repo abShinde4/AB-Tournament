@@ -74,11 +74,10 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-userSchema.pre("save", function normalizeEmailBeforeSave(next) {
+userSchema.pre("save", async function normalizeEmailBeforeSave() {
   if (typeof this.email === "string" && this.email.trim() === "") {
     this.email = undefined;
   }
-  next();
 });
 
 userSchema.index({ username: 1 }, { unique: true });
