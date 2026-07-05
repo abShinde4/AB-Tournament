@@ -14,16 +14,20 @@ const nonEmptyUrl = z.preprocess((value) => {
   return value;
 }, z.string().trim().url());
 
-const phoneNumberSchema = z
-  .string()
-  .trim()
-  .regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit phone number");
+const phoneNumberSchema = z.preprocess((value) => {
+  if (typeof value === "string") {
+    return value.replace(/\D/g, "").slice(-10);
+  }
+  return value;
+}, z.string().trim().regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit phone number"));
 
 const registerSchema = z.object({
   body: z
     .object({
       fullName: z.string().trim().min(2).max(60),
-      phoneNumber: phoneNumberSchema,
+      phoneNumber: phoneNumberSchema.optional(),
+      phone: phoneNumberSchema.optional(),
+      email: z.string().trim().email().optional().or(z.literal("")),
       password: z.string().min(6).max(64),
       confirmPassword: z.string().min(6).max(64),
       bgmiUid: z.string().trim().max(20).optional().or(z.literal("")),
@@ -31,6 +35,15 @@ const registerSchema = z.object({
       acceptTerms: z.literal(true, {
         errorMap: () => ({ message: "You must accept the terms and conditions." }),
       }),
+    })
+    .superRefine((data, ctx) => {
+      if (!data.phoneNumber && !data.phone) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["phoneNumber"],
+          message: "Phone number is required.",
+        });
+      }
     })
     .refine((data) => data.password === data.confirmPassword, {
       message: "Passwords do not match.",
@@ -41,10 +54,22 @@ const registerSchema = z.object({
 });
 
 const loginSchema = z.object({
-  body: z.object({
-    phoneNumber: phoneNumberSchema,
-    password: z.string().min(6).max(64),
-  }),
+  body: z
+    .object({
+      phoneNumber: phoneNumberSchema.optional(),
+      phone: phoneNumberSchema.optional(),
+      email: z.string().trim().email().optional().or(z.literal("")),
+      password: z.string().min(6).max(64),
+    })
+    .superRefine((data, ctx) => {
+      if (!data.phoneNumber && !data.phone && !data.email) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["phoneNumber"],
+          message: "Phone number or email is required.",
+        });
+      }
+    }),
   params: z.object({}).optional(),
   query: z.object({}).optional(),
 });

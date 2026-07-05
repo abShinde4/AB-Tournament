@@ -12,6 +12,7 @@ const serializeUser = (user) => ({
   username: user.username,
   fullName: user.fullName || "",
   phoneNumber: user.phoneNumber || "",
+  phone: user.phoneNumber || "",
   phoneVerified: Boolean(user.phoneVerified),
   email: user.email || "",
   walletBalance: user.walletBalance,
@@ -48,14 +49,19 @@ const generateUsername = async (fullName, phone) => {
 
 const register = async (req, res) => {
   try {
-    const { fullName, phoneNumber, password, bgmiUid, freeFireUid } = req.validated.body;
-    const normalizedPhone = normalizePhone(phoneNumber);
+    const { fullName, phoneNumber, phone, password, bgmiUid, freeFireUid, email } = req.validated.body;
+    const normalizedPhone = normalizePhone(phoneNumber || phone);
+
+    if (!normalizedPhone) {
+      return res.status(400).json({ message: "Phone number is required." });
+    }
 
     const existing = await User.findOne({ phoneNumber: normalizedPhone });
     if (existing) {
       return res.status(409).json({ message: "Phone number already registered." });
     }
 
+    const normalizedEmail = typeof email === "string" && email.trim() ? email.trim().toLowerCase() : null;
     const hashed = await bcrypt.hash(password, 10);
     const username = await generateUsername(fullName, normalizedPhone);
     const adminPhone = process.env.ADMIN_PHONE ? normalizePhone(process.env.ADMIN_PHONE) : null;
@@ -66,6 +72,7 @@ const register = async (req, res) => {
       fullName: fullName.trim(),
       phoneNumber: normalizedPhone,
       password: hashed,
+      ...(normalizedEmail ? { email: normalizedEmail } : {}),
       bgmiUid: bgmiUid?.trim() || "",
       freeFireUid: freeFireUid?.trim() || "",
       role,
@@ -82,12 +89,13 @@ const register = async (req, res) => {
   } catch (error) {
     if (error.code === 11000) {
       const field = Object.keys(error.keyPattern || {})[0] || "field";
-      return res.status(409).json({
-        message:
-          field === "phoneNumber"
-            ? "Phone number already registered."
-            : "An account with these details already exists.",
-      });
+      if (field === "phoneNumber") {
+        return res.status(409).json({ message: "Phone number already registered." });
+      }
+      if (field === "email") {
+        return res.status(409).json({ message: "This email is already in use." });
+      }
+      return res.status(409).json({ message: "An account with these details already exists." });
     }
     // eslint-disable-next-line no-console
     console.error("Registration error:", error);
@@ -97,10 +105,17 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   try {
-    const { phoneNumber, password } = req.validated.body;
-    const normalizedPhone = normalizePhone(phoneNumber);
+    const { phoneNumber, phone, password, email } = req.validated.body;
+    const normalizedPhone = normalizePhone(phoneNumber || phone);
+    const normalizedEmail = typeof email === "string" && email.trim() ? email.trim().toLowerCase() : null;
 
-    const user = await User.findOne({ phoneNumber: normalizedPhone });
+    let user = null;
+    if (normalizedPhone) {
+      user = await User.findOne({ phoneNumber: normalizedPhone });
+    }
+    if (!user && normalizedEmail) {
+      user = await User.findOne({ email: normalizedEmail });
+    }
     if (!user) {
       return res.status(401).json({
         message:

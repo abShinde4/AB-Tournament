@@ -1,4 +1,11 @@
 const mongoose = require("mongoose");
+const { normalizePhone } = require("../utils/phoneUtils");
+
+const normalizeEmail = (value) => {
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  return trimmed ? trimmed.toLowerCase() : undefined;
+};
 
 const userSchema = new mongoose.Schema(
   {
@@ -10,16 +17,19 @@ const userSchema = new mongoose.Schema(
       maxlength: 24,
     },
     fullName: { type: String, default: "", trim: true, maxlength: 60 },
-    phoneNumber: { type: String, trim: true, unique: true, sparse: true },
+    phoneNumber: {
+      type: String,
+      trim: true,
+      set: (value) => normalizePhone(value),
+    },
     phoneVerified: { type: Boolean, default: false },
     whatsappNumber: { type: String, default: "", trim: true },
     email: {
       type: String,
-      unique: true,
-      sparse: true,
       lowercase: true,
       trim: true,
-      default: null,
+      default: undefined,
+      set: normalizeEmail,
     },
     password: {
       type: String,
@@ -64,6 +74,15 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+userSchema.pre("save", function normalizeEmailBeforeSave(next) {
+  if (typeof this.email === "string" && this.email.trim() === "") {
+    this.email = undefined;
+  }
+  next();
+});
+
 userSchema.index({ username: 1 }, { unique: true });
+userSchema.index({ phoneNumber: 1 }, { unique: true, sparse: true });
+userSchema.index({ email: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model("User", userSchema);

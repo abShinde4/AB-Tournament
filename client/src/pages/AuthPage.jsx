@@ -58,6 +58,7 @@ const AuthPage = () => {
     try {
       const data = await api.login({
         phoneNumber: loginForm.phoneNumber,
+        phone: loginForm.phoneNumber,
         password: loginForm.password,
       });
       setSession(data);
@@ -85,6 +86,7 @@ const AuthPage = () => {
       const payload = {
         fullName: registerForm.fullName.trim(),
         phoneNumber: registerForm.phoneNumber,
+        phone: registerForm.phoneNumber,
         password: registerForm.password,
         confirmPassword: registerForm.confirmPassword,
         bgmiUid: registerForm.bgmiUid.trim(),
