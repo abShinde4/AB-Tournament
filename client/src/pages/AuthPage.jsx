@@ -7,9 +7,10 @@ import "./auth-page.css";
 
 const INSTAGRAM_URL = "https://www.instagram.com/ab.tournament";
 
-const initialLogin = { phoneNumber: "", password: "" };
+const initialLogin = { identifier: "", password: "" };
 const initialRegister = {
-  fullName: "",
+  username: "",
+  email: "",
   phoneNumber: "",
   password: "",
   confirmPassword: "",
@@ -38,28 +39,41 @@ const AuthPage = () => {
     }
   }, [isAuthenticated, navigate, redirectPath]);
 
-  const handlePhoneInput = (value, isRegister = false) => {
+  const handlePhoneInput = (value) => {
     const digits = value.replace(/\D/g, "").slice(0, 10);
-    if (isRegister) {
-      setRegisterForm((prev) => ({ ...prev, phoneNumber: digits }));
+    setRegisterForm((prev) => ({ ...prev, phoneNumber: digits }));
+  };
+
+  const buildLoginPayload = () => {
+    const identifier = loginForm.identifier.trim();
+    const payload = { password: loginForm.password };
+
+    if (/^\d{10}$/.test(identifier)) {
+      payload.phoneNumber = identifier;
+    } else if (identifier.includes("@")) {
+      payload.email = identifier.toLowerCase();
     } else {
-      setLoginForm((prev) => ({ ...prev, phoneNumber: digits }));
+      payload.username = identifier;
     }
+
+    return payload;
   };
 
   const submitLogin = async (event) => {
     event.preventDefault();
-    if (loginForm.phoneNumber.length !== 10) {
-      setMessage("Enter a valid 10-digit phone number.");
+    const identifier = loginForm.identifier.trim();
+    if (!identifier) {
+      setMessage("Enter username, email, or phone number.");
+      return;
+    }
+    if (identifier.includes("@") && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier)) {
+      setMessage("Enter a valid email address.");
       return;
     }
     setLoading(true);
     setMessage("");
     try {
-      const data = await api.login({
-        phoneNumber: loginForm.phoneNumber,
-        password: loginForm.password,
-      });
+      const data = await api.login(buildLoginPayload());
       setSession(data);
       navigate(redirectPath, { replace: true });
     } catch (error) {
@@ -76,23 +90,24 @@ const AuthPage = () => {
       return;
     }
     if (registerForm.phoneNumber.length !== 10) {
-      setMessage("Enter a valid 10-digit phone number.");
+      setMessage("Invalid phone number.");
       return;
     }
     setLoading(true);
     setMessage("");
     try {
       const payload = {
-        fullName: registerForm.fullName.trim(),
+        username: registerForm.username.trim(),
+        email: registerForm.email.trim().toLowerCase(),
         phoneNumber: registerForm.phoneNumber,
         password: registerForm.password,
         confirmPassword: registerForm.confirmPassword,
         bgmiUid: registerForm.bgmiUid.trim(),
         freeFireUid: registerForm.freeFireUid.trim(),
-        acceptTerms: true,
       };
       const data = await api.register(payload);
       setSession(data);
+      setMessage(data.message || "Registration successful.");
       navigate(redirectPath, { replace: true });
     } catch (error) {
       setMessage(error.message);
@@ -111,7 +126,11 @@ const AuthPage = () => {
           <img src="/favicon.png" alt="" className="auth-brand-icon" />
           <div>
             <h1>{mode === "login" ? "Welcome Back" : "Join AB Tournament"}</h1>
-            <p>{mode === "login" ? "Sign in with your phone number" : "Create your player account"}</p>
+            <p>
+              {mode === "login"
+                ? "Sign in with your username, email, or phone number"
+                : "Create your player account"}
+            </p>
           </div>
         </div>
 
@@ -120,17 +139,16 @@ const AuthPage = () => {
         {mode === "login" ? (
           <form onSubmit={submitLogin} className="auth-form">
             <label className="auth-label">
-              Phone Number
+              Username, Email, or Phone
               <input
                 required
-                type="tel"
-                inputMode="numeric"
-                placeholder="10-digit mobile number"
-                value={loginForm.phoneNumber}
-                onChange={(e) => handlePhoneInput(e.target.value)}
+                type="text"
+                placeholder="Username, email, or 10-digit phone"
+                value={loginForm.identifier}
+                onChange={(e) => setLoginForm({ ...loginForm, identifier: e.target.value })}
                 disabled={loading}
                 className="auth-input"
-                autoComplete="tel"
+                autoComplete="username"
               />
             </label>
             <label className="auth-label">
@@ -167,14 +185,30 @@ const AuthPage = () => {
         ) : (
           <form onSubmit={submitRegister} className="auth-form">
             <label className="auth-label">
-              Full Name
+              Username
               <input
                 required
-                placeholder="Your full name"
-                value={registerForm.fullName}
-                onChange={(e) => setRegisterForm({ ...registerForm, fullName: e.target.value })}
+                placeholder="Choose a username"
+                value={registerForm.username}
+                onChange={(e) => setRegisterForm({ ...registerForm, username: e.target.value })}
                 disabled={loading}
                 className="auth-input"
+                autoComplete="username"
+                minLength={3}
+                maxLength={24}
+              />
+            </label>
+            <label className="auth-label">
+              Email
+              <input
+                required
+                type="email"
+                placeholder="you@example.com"
+                value={registerForm.email}
+                onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
+                disabled={loading}
+                className="auth-input"
+                autoComplete="email"
               />
             </label>
             <label className="auth-label">
@@ -185,13 +219,16 @@ const AuthPage = () => {
                 inputMode="numeric"
                 placeholder="10-digit mobile number"
                 value={registerForm.phoneNumber}
-                onChange={(e) => handlePhoneInput(e.target.value, true)}
+                onChange={(e) => handlePhoneInput(e.target.value)}
                 disabled={loading}
                 className="auth-input"
               />
+              <p className="auth-helper-note">
+                Important: Use the same mobile number that is active on PhonePe / Google Pay. This will help avoid withdrawal issues later.
+              </p>
             </label>
             <label className="auth-label">
-              Create Password
+              Password
               <input
                 required
                 type="password"

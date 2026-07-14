@@ -32,9 +32,10 @@ const buildAllowedOrigins = () => {
     "https://ab-tournament-git-main-abshinde4s-projects.vercel.app",
   ]);
 
-  if (process.env.CLIENT_URL) {
-    origins.add(process.env.CLIENT_URL.replace(/\/$/, ""));
-  }
+  const extraOrigins = [process.env.CLIENT_URL, process.env.FRONTEND_URL].filter(Boolean);
+  extraOrigins.forEach((origin) => {
+    if (origin) origins.add(origin.replace(/\/$/, ""));
+  });
 
   return origins;
 };

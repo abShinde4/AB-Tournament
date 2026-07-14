@@ -73,16 +73,22 @@ const userSchema = new mongoose.Schema(
     otpAttempts: { type: Number, default: 0 },
     // Gaming identity verification
     bgmiName: { type: String, default: "", trim: true },
-    bgmiUid: { type: String, default: "", trim: true, set: normalizeOptionalString },
+    bgmiUid: { type: String, trim: true, set: normalizeOptionalString },
     freeFireName: { type: String, default: "", trim: true },
-    freeFireUid: { type: String, default: "", trim: true, set: normalizeOptionalString },
+    freeFireUid: { type: String, trim: true, set: normalizeOptionalString },
   },
   { timestamps: true }
 );
 
-userSchema.pre("save", async function normalizeEmailBeforeSave() {
+userSchema.pre("save", function normalizeEmptyFieldsBeforeSave() {
   if (typeof this.email === "string" && this.email.trim() === "") {
     this.email = undefined;
+  }
+  if (typeof this.bgmiUid === "string" && this.bgmiUid.trim() === "") {
+    this.bgmiUid = undefined;
+  }
+  if (typeof this.freeFireUid === "string" && this.freeFireUid.trim() === "") {
+    this.freeFireUid = undefined;
   }
 });
 

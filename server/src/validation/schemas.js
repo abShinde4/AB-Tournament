@@ -19,30 +19,25 @@ const phoneNumberSchema = z.preprocess((value) => {
     return value.replace(/\D/g, "").slice(-10);
   }
   return value;
-}, z.string().trim().regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit phone number"));
+}, z.string().trim().regex(/^[6-9]\d{9}$/, "Invalid phone number."));
+
+const optionalGameUid = z.preprocess((value) => {
+  if (typeof value === "string" && value.trim() === "") {
+    return undefined;
+  }
+  return value;
+}, z.string().trim().max(20).optional());
 
 const registerSchema = z.object({
   body: z
     .object({
-      fullName: z.string().trim().min(2).max(60),
-      phoneNumber: phoneNumberSchema.optional(),
-      phone: phoneNumberSchema.optional(),
+      username: z.string().trim().min(3).max(24),
+      email: z.string().email().transform((value) => value.toLowerCase()),
+      phoneNumber: phoneNumberSchema,
       password: z.string().min(6).max(64),
       confirmPassword: z.string().min(6).max(64),
-      bgmiUid: z.string().trim().max(20).optional().or(z.literal("")),
-      freeFireUid: z.string().trim().max(20).optional().or(z.literal("")),
-      acceptTerms: z.literal(true, {
-        errorMap: () => ({ message: "You must accept the terms and conditions." }),
-      }),
-    })
-    .superRefine((data, ctx) => {
-      if (!data.phoneNumber && !data.phone) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["phoneNumber"],
-          message: "Phone number is required.",
-        });
-      }
+      bgmiUid: optionalGameUid,
+      freeFireUid: optionalGameUid,
     })
     .refine((data) => data.password === data.confirmPassword, {
       message: "Passwords do not match.",
@@ -55,16 +50,17 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   body: z
     .object({
+      username: z.string().trim().min(3).max(24).optional(),
+      email: z.string().email().transform((value) => value.toLowerCase()).optional(),
       phoneNumber: phoneNumberSchema.optional(),
-      phone: phoneNumberSchema.optional(),
       password: z.string().min(6).max(64),
     })
     .superRefine((data, ctx) => {
-      if (!data.phoneNumber && !data.phone) {
+      if (!data.username && !data.email && !data.phoneNumber) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ["phoneNumber"],
-          message: "Phone number is required.",
+          path: ["username"],
+          message: "Enter username, email, or phone number.",
         });
       }
     }),

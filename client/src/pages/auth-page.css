@@ -135,6 +135,17 @@
   box-shadow: 0 0 0 3px rgba(110, 231, 183, 0.12);
 }
 
+.auth-helper-note {
+  margin: 0;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid rgba(34, 211, 238, 0.18);
+  background: rgba(34, 211, 238, 0.08);
+  color: #8ddff5;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
 .auth-submit {
   width: 100%;
   min-height: 50px;

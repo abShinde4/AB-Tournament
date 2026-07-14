@@ -15,6 +15,39 @@ const syncAdminPassword = async (adminUser, adminPassword) => {
   return true;
 };
 
+const syncAdminIdentity = async (adminUser, { adminUsername, adminName, legacyAdminEmail }) => {
+  let changed = false;
+
+  if (adminUsername && adminUser.username !== adminUsername) {
+    const usernameTaken = await User.findOne({
+      username: adminUsername,
+      _id: { $ne: adminUser._id },
+    }).select("_id");
+    if (!usernameTaken) {
+      adminUser.username = adminUsername;
+      changed = true;
+    }
+  }
+
+  if (adminName && adminUser.fullName !== adminName) {
+    adminUser.fullName = adminName;
+    changed = true;
+  }
+
+  if (legacyAdminEmail && adminUser.email !== legacyAdminEmail) {
+    const emailTaken = await User.findOne({
+      email: legacyAdminEmail,
+      _id: { $ne: adminUser._id },
+    }).select("_id");
+    if (!emailTaken) {
+      adminUser.email = legacyAdminEmail;
+      changed = true;
+    }
+  }
+
+  return changed;
+};
+
 const attachAdminPhone = async (adminUser, adminPhone) => {
   if (hasValidPhone(adminUser.phoneNumber)) return false;
 
@@ -65,6 +98,8 @@ const ensureAdminUser = async () => {
       adminUser.role = "admin";
       changed = true;
     }
+    changed =
+      (await syncAdminIdentity(adminUser, { adminUsername, adminName, legacyAdminEmail })) || changed;
     if (adminPhone) {
       changed = (await attachAdminPhone(adminUser, adminPhone)) || changed;
     } else if (!hasValidPhone(adminUser.phoneNumber)) {
